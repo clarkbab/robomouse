@@ -20,11 +20,8 @@ class Display:
         # Create the drawing tool.
         self.tool = turtle.Turtle()
         self.tool.pensize(3)
-        self.tool.speed('fastest')
         self.tool.hideturtle()
-
-        # Set a small delay so maze is drawn quickly.
-        self.screen.delay(0)
+        self.screen.tracer(0)
 
         # Draw walls of maze.
         for x in range(self.maze.dim):
@@ -44,8 +41,15 @@ class Display:
                 if x == 0 and not self.maze.is_permissible([x, y], self.maze.WEST):
                     self.draw_wall((x, y), self.maze.WEST)
 
+        # Turn tracer back on.
+        self.screen.tracer(1)
+
     def draw_wall(self, cell, side):
         """Draws a wall for a cell.
+
+        Arguments:
+            cell -- the position of the cell.
+            side -- the heading of the wall.
         """
         start = None
         heading = None

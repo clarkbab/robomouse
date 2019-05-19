@@ -37,4 +37,4 @@ class BlindMouse():
         rotation = random.choice([-90, 0, 90])
         movement = random.choice(range(-3, 4))
 
-        return rotation, move
+        return rotation, movement
