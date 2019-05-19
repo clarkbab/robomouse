@@ -1,6 +1,6 @@
 import random
 
-class Mouse():
+class RandomMouse():
     def __init__(self, maze_dim):
         '''
         Use the initialization function to set up attributes that your robot
