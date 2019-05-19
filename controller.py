@@ -3,26 +3,26 @@ import pdb
 import numpy as np
 
 class Controller:
-    MAX_DEGREES = 360
-    VALID_HEADINGS = [0, 90, 180, 270]
-    VALID_ROTATIONS = [0, 90, -90]
+    HEADING_RANGE = (0, 360)
+    VALID_HEADINGS = (0, 90, 180, 270)
+    VALID_ROTATIONS = (0, 90, -90)
     MAX_STEPS = 3 
 
-    def __init__(self, mouse, maze, display=None, n_steps=10, delay=1000, paused=False, verbose=True):
+    def __init__(self, mouse, maze, display=None, steps=10, delay=1000, paused=False, verbose=True):
         """Creates a controller.
 
         Arguments:
             mouse -- the Mouse who will navigate the maze.
             maze -- the Maze to navigate.
             display -- a method of displaying the progress.
-            n_steps -- the number of iterations in the game.
+            steps -- the number of iterations in the game.
             delay -- the delay between iterations.
             paused -- the initial state of the controller.
             verbose -- prints info to the command line.
         """
         self.mouse = mouse
         self.maze = maze
-        self.n_steps = n_steps
+        self.steps = steps
         self.delay = delay
         self.step = 0
         self.paused = paused
@@ -63,7 +63,7 @@ class Controller:
 
         # If paused, enqueue a new step and finish.
         if self.paused:
-            if verbose: print('paused')
+            if self.verbose: print('paused')
             self.enqueue_step()
             return
 
@@ -77,7 +77,7 @@ class Controller:
         # Update mouse's heading and position.
         rot, move = self.mouse.next_move(readings)
         
-        if verbose:
+        if self.verbose:
             print(f"Pos: {self.mouse_state['pos']}")
             print(f"Heading: {self.mouse_state['heading']}")
             print(f"Sensors: {readings}")
@@ -100,16 +100,16 @@ class Controller:
             self.enqueue_step()
             return
 
-        # Is the move valid given the structure of the maze?
-        if not self.maze.valid_move(*self.mouse_state.values(), move):
-            self.enqueue_step()
-            return
-
         # Update the mouse's heading.
         self.mouse_state['heading'] = self.rotate_heading(self.mouse_state['heading'], rot)
 
         # Write new heading to the display.
         self.display.set_heading(self.mouse_state['heading']) 
+
+        # Is the move valid given the structure of the maze?
+        if not self.maze.valid_move(*self.mouse_state.values(), move):
+            self.enqueue_step()
+            return
 
         # Update the mouse's position.
         self.mouse_state['pos'] += move * self.heading_axis_map()[self.mouse_state['heading']]
@@ -168,10 +168,10 @@ class Controller:
         new_heading = heading + rot
 
         # Account for values outside of the accepted range.
-        if new_heading >= 360:
-            new_heading -= 360
-        elif new_heading < 0:
-            new_heading += 360
+        if new_heading >= self.HEADING_RANGE[1]:
+            new_heading -= self.HEADING_RANGE[1]
+        elif new_heading < self.HEADING_RANGE[0]:
+            new_heading += self.HEADING_RANGE[1] 
 
         return new_heading
 

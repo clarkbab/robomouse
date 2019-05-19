@@ -2,17 +2,29 @@
 
 import time
 import sys
+import pdb
 import numpy as np
+from optparse import OptionParser
 
 from maze import Maze
-from mice.random_mouse import RandomMouse
+from mice.blind_mouse import BlindMouse
 from display import Display
 from controller import Controller
 
 if __name__ == '__main__':
+    # Parse options.
+    parser = OptionParser()
+    parser.add_option('-d', '--delay', dest='delay', help='delay between steps in ms.', default=1000, type='int')
+    parser.add_option('-D', '--display', action='store_true', dest='display', help='show display', default=False)
+    parser.add_option('-M', '--maze', dest='maze', help='path to a maze file.')
+    parser.add_option('-m', '--mouse', dest='mouse', help='path to a mouse file.')
+    parser.add_option('-p', '--paused', action='store_true', dest='paused', help='begin in paused state.', default=False)
+    parser.add_option('-s', '--steps', dest='steps', help='max number of steps per run.', default=1000, type='int') 
+    parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='log info.', default=False)
+    opts, args = parser.parse_args()
 
     # Create a maze based on input argument on command line.
-    maze = Maze(str(sys.argv[1]))
+    maze = Maze(opts.maze)
 
     # Create the display module.
     display = Display(maze)
@@ -21,14 +33,22 @@ if __name__ == '__main__':
     display.draw_maze()
 
     # Create and place the mouse.
-    mouse = Mouse(maze.dim)
+    mouse = BlindMouse(maze.dim)
     init_state = { 'pos': np.array([0, 2]), 'heading': Maze.NORTH }
 
     # Create manager.
-    controller = Controller(mouse, maze, display, paused=True, delay=100)
+    controller = Controller(
+        mouse,
+        maze,
+        display,
+        steps=opts.steps,
+        delay=opts.delay,
+        paused=opts.paused,
+        verbose=opts.verbose
+    )
 
     # Run planning round.
-    controller.run(init_state)
+    controller.start(init_state)
 
     print('finished')
 

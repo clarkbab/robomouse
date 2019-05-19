@@ -1,6 +1,6 @@
 import random
 
-class RandomMouse():
+class BlindMouse():
     def __init__(self, maze_dim):
         '''
         Use the initialization function to set up attributes that your robot
@@ -37,4 +37,4 @@ class RandomMouse():
         rotation = random.choice([-90, 0, 90])
         movement = random.choice(range(-3, 4))
 
-        return rotation, movement
+        return rotation, move
