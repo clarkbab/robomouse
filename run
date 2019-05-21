@@ -2,7 +2,6 @@
 
 import sys
 from optparse import OptionParser
-
 from maze import Maze
 from mice.blind_mouse import BlindMouse
 from display import Display
@@ -20,7 +19,7 @@ if __name__ == '__main__':
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='log info.', default=False)
     opts, args = parser.parse_args()
 
-    # Create a maze based on input argument on command line.
+    # Create the maze.
     maze = Maze(opts.maze)
     
     # Create the display.
@@ -31,7 +30,7 @@ if __name__ == '__main__':
     mouse = BlindMouse(maze.dim)
     init_state = { 'pos': [8, 2], 'heading': Maze.NORTH }
 
-    # Create manager.
+    # Create the controller.
     controller = Controller(
         mouse,
         maze,
@@ -52,3 +51,4 @@ if __name__ == '__main__':
     print(f"Steps: {controller.steps}")
     print(f"Final score: {controller.score()}")
 
+    sys.exit(0)

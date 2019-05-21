@@ -1,5 +1,4 @@
 import numpy as np
-import pdb
 
 class Maze(object):
     # Define the directions.
@@ -17,6 +16,14 @@ class Maze(object):
         EAST: np.array([1, 0]),
         SOUTH: np.array([0, -1]),
         WEST: np.array([-1, 0])
+    }
+
+    # Maps heading to wall decimal.
+    HEADING_DECIMAL_MAP = {
+        NORTH: 1,
+        EAST: 2,
+        SOUTH: 4,
+        WEST: 8
     }
 
     def __init__(self, filename):
@@ -76,19 +83,30 @@ class Maze(object):
             raise Exception('Consistency errors found in wall specifications!')
 
     def is_permissible(self, pos, heading):
-        heading_int_map = {
-            self.NORTH: 1,
-            self.EAST: 2,
-            self.SOUTH: 4,
-            self.WEST: 8
-        }
+        """Tells if we can move from a square in a heading.
 
-        return self.walls[pos[0], pos[1]] & heading_int_map[heading] != 0
+        Arguments:
+            pos -- the current position.
+            heading -- the heading to move in.
+        Returns:
+            True if we can move, False otherwise.
+        """
+        # Check if there's a wall in that direction.
+        return self.walls[pos[0], pos[1]] & self.HEADING_DECIMAL_MAP[heading] != 0
 
     def dist_to_wall(self, pos, heading):
-        distance = 0
+        """Checks the distance to a wall in a particular heading.
+
+        Arguments:
+            pos -- the current position.
+            heading -- the current heading.
+        Return:
+            an integer distance. The number of moves that can be made in that direction.
+        """
+        # Copy the pos as we're modifying it.
         curr_pos = pos.copy()
 
+        distance = 0
         while self.is_permissible(curr_pos, heading):
             distance += 1
             curr_pos[0] += self.HEADING_COMPONENTS_MAP[heading][0]
@@ -175,9 +193,11 @@ class Maze(object):
 
         Arguments:
             pos -- the [x, y] co-ordinates of the mouse.
-            heading -- the heading of the movement. This isn't necessarily the
-                heading of the mouse, it could be reversing.
+            heading -- the heading of the movement. This isn't necessarily the  heading of the mouse, it could be
+                reversing.
             size -- the size of the move. Positive or negative.
+        Returns:
+            True if valid move, False otherwise.
         """
         # Check that starting pos is valid.
         if not self.pos_exists(pos):
@@ -208,6 +228,8 @@ class Maze(object):
 
         Arguments:
             pos -- a list containing the [x, y] co-ordinates of the mouse.
+        Returns:
+            True if position exists, False otherwise.
         """
         # Check that position is integer.
         if not isinstance(pos[0], int) or not isinstance(pos[1], int):
@@ -221,7 +243,4 @@ class Maze(object):
             return False
 
         return True
-
-
-
 
