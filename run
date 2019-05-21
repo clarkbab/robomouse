@@ -19,19 +19,22 @@ if __name__ == '__main__':
     parser.add_option('-M', '--maze', dest='maze', help='path to a maze file.')
     parser.add_option('-m', '--mouse', dest='mouse', help='path to a mouse file.')
     parser.add_option('-p', '--pause', action='store_true', dest='pause', help='pause between runs', default=False)
-    parser.add_option('-s', '--steps', dest='steps', help='max number of steps per run.', default=1000, type='int') 
+    parser.add_option('-s', '--max_steps', dest='max_steps', help='max number of steps per run.', default=1000, type='int') 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='log info.', default=False)
     opts, args = parser.parse_args()
+    
+    # Check opts.
+    if opts.pause and not opts.display:
+        print("Can't pause without display.")
+        sys.exit(1)
 
     # Create a maze based on input argument on command line.
     maze = Maze(opts.maze)
-
-    # Create the display module.
-    display = Display(maze)
-
-    # Draw the maze.
-    display.draw_maze()
-
+    
+    # Create the display.
+    display = None
+    if opts.display: display = Display(maze)
+        
     # Create and place the mouse.
     mouse = BlindMouse(maze.dim)
     init_state = { 'pos': np.array([8, 2]), 'heading': Maze.NORTH }
@@ -40,15 +43,18 @@ if __name__ == '__main__':
     controller = Controller(
         mouse,
         maze,
-        display,
-        steps=opts.steps,
+        init_state,
+        max_steps=opts.max_steps,
         delay=opts.delay,
         pause=opts.pause,
         verbose=opts.verbose
     )
 
-    # Run planning round.
-    controller.start(init_state)
+    # Run the game.
+    if display:
+        controller.run_with_display(display)
+    else:
+        controller.run()
 
     # Print results.
     print(f"Steps: {controller.step}")

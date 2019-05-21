@@ -115,20 +115,17 @@ class Display:
         y = self.origin + (pos[1] + 0.5) * self.square_size
         self.mouse_tool.goto(x, y)
 
-    def listen(self, callback, period):
+    def begin_display_control(self, callback, period):
         """sets focus on the turtlescreen and listens for events.
         """
-        # set up timer that will kick off iterations.
-        self.sleep(callback, period)
-        
-        # start listening for events and running the gui mainloop.
+        # Listen for events and run the GUI main loop.
         self.screen.listen()
         turtle.mainloop()
 
     def close(self):
         turtle.bye()
 
-    def sleep(self, callback, period):
+    def enqueue_step(self, callback, period):
         self.screen.ontimer(callback, period)
 
     def clear_track(self):
