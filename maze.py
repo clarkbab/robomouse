@@ -2,10 +2,22 @@ import numpy as np
 import pdb
 
 class Maze(object):
+    # Define the directions.
     NORTH = 0
     EAST = 90
     SOUTH = 180
     WEST = 270
+
+    # Acceptable heading range.
+    HEADING_RANGE = range(360)
+    
+    # Maps headings to the axial components.
+    HEADING_COMPONENTS_MAP = {
+        NORTH: np.array([0, 1]),
+        EAST: np.array([1, 0]),
+        SOUTH: np.array([0, -1]),
+        WEST: np.array([-1, 0])
+    }
 
     def __init__(self, filename):
         '''
@@ -74,30 +86,72 @@ class Maze(object):
         return self.walls[pos[0], pos[1]] & heading_int_map[heading] != 0
 
     def dist_to_wall(self, pos, heading):
-        heading_move_map = {
-            self.NORTH: (0, 1),
-            self.EAST: (1, 0),
-            self.SOUTH: (0, -1),
-            self.WEST: (-1, 0)
-        }
         distance = 0
         curr_pos = pos.copy()
 
         while self.is_permissible(curr_pos, heading):
             distance += 1
-            curr_pos[0] += heading_move_map[heading][0]
-            curr_pos[1] += heading_move_map[heading][1]
+            curr_pos[0] += self.HEADING_COMPONENTS_MAP[heading][0]
+            curr_pos[1] += self.HEADING_COMPONENTS_MAP[heading][1]
 
         return distance
 
-    def move_components(self, heading):
-        """Returns the [x, y] components of a move in a certain heading.
+    def new_pos(self, pos, heading, move):
+        """Returns the new position after moving.
+
+        Arguments:
+            pos -- the current position.
+            heading -- the current heading.
+            move -- the desired move.
+        Returns:
+            A list of [x, y] components, showing the new position.
+        """
+        # Get x, y changes.
+        dx, dy = move * self.HEADING_COMPONENTS_MAP[heading] 
+
+        # Update x, y co-ordinates.
+        x_new, y_new = pos[0] + dx, pos[1] + dy
+
+        return [x_new, y_new]
+
+    def new_heading(self, heading, rot):
+        """Calculates the new heading.
 
         Arguments:
             heading -- the heading in degrees.
+            rot -- the rotation in degrees.
         Returns:
-            A numpy array of the [x, y] co-ordinates for a move of magnitude one in the specified heading.
+            the new heading wrapped to the range (0, 360].
         """
+        new_heading = heading + rot
+
+        # Account for values outside of the accepted range.
+        if new_heading >= len(self.HEADING_RANGE):
+            new_heading -= len(self.HEADING_RANGE)
+        elif new_heading < min(self.HEADING_RANGE):
+            new_heading += len(self.HEADING_RANGE)
+
+        return new_heading
+        
+    def sensor_readings(self, pos, heading):
+        """Calculate the mouse's sensor readings.
+
+        Arguments:
+            pos -- the mouse's current position.
+            heading -- the mouse's heading.
+        Returns:
+            A tuple of sensor readings, each giving the distance to the wall in the (left, middle, right) directions.
+        """
+        # Get left and right headings.
+        l_head = self.new_heading(heading, -90)
+        r_head = self.new_heading(heading, 90)
+
+        # Get distances for each heading.
+        dist = self.dist_to_wall(pos, heading)
+        l_dist = self.dist_to_wall(pos, l_head) 
+        r_dist = self.dist_to_wall(pos, r_head) 
+
+        return (l_dist, dist, r_dist)
 
     def reached_goal(self, pos):
         """Is the position within the goal?

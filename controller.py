@@ -1,4 +1,5 @@
 import time
+import pdb
 import numpy as np
 import copy
 
@@ -182,7 +183,7 @@ class Controller:
         self.steps[self.run] += 1
 
         # Get sensor readings.
-        readings = self.sensor_readings(*self.mouse_state.values())
+        readings = self.maze.sensor_readings(*self.mouse_state.values())
 
         # Get mouse's desired move.
         rot, move = self.mouse.next_move(readings)
@@ -210,14 +211,14 @@ class Controller:
             return False
 
         # Update the mouse's heading.
-        self.mouse_state['heading'] = self.rotate_heading(self.mouse_state['heading'], rot)
+        self.mouse_state['heading'] = self.maze.new_heading(self.mouse_state['heading'], rot)
 
         # Is the move valid given the structure of the maze?
         if not self.maze.valid_move(*self.mouse_state.values(), move):
             return False
 
         # Update the mouse's position.
-        self.mouse_state['pos'] += move * self.maze.move_components(self.mouse_state['heading'])
+        self.mouse_state['pos'] = self.maze.new_pos(*self.mouse_state.values(), move)
 
         # Check if mouse has reached goal.
         if (not self.reached_goal) and self.maze.reached_goal(self.mouse_state['pos']):
@@ -232,57 +233,10 @@ class Controller:
         # Mouse hasn't finished, keep going.
         return False
 
-    def sensor_readings(self, pos, heading):
-        """Returns the sensor readings from the mouse.
-
-        Arguments:
-            pos -- the mouse's current position.
-            heading -- the mouse's heading.
-        Returns:
-            A tuple of sensor readings, each giving the distance to the wall in the (left, middle, right) directions.
-        """
-        # Get left and right headings.
-        l_head = self.rotate_heading(heading, -90)
-        r_head = self.rotate_heading(heading, 90)
-
-        # Get distances for each heading.
-        dist = self.maze.dist_to_wall(pos, heading)
-        l_dist = self.maze.dist_to_wall(pos, l_head) 
-        r_dist = self.maze.dist_to_wall(pos, r_head) 
-
-        return (l_dist, dist, r_dist)
-
     def toggle_pause(self):
         """Toggles the paused state.
         """
         self.paused = not self.paused
-
-    def heading_axis_map(self):
-        """Maps a unit move in a heading to axis values.
-        """
-        return { 
-            self.maze.NORTH: np.array([0, 1]),
-            self.maze.EAST: np.array([1, 0]),
-            self.maze.SOUTH: np.array([0, -1]),
-            self.maze.WEST: np.array([-1, 0])
-        }
-
-    def rotate_heading(self, heading, rot):
-        """Returns the new heading within the range (0, 360].
-
-        Arguments:
-            heading -- the current heading.
-            rot -- the rotation in degrees.
-        """
-        new_heading = heading + rot
-
-        # Account for values outside of the accepted range.
-        if new_heading >= self.HEADING_RANGE[1]:
-            new_heading -= self.HEADING_RANGE[1]
-        elif new_heading < self.HEADING_RANGE[0]:
-            new_heading += self.HEADING_RANGE[1] 
-
-        return new_heading
 
     def score(self):
         """Calculates the mouse's score for the run.
@@ -301,7 +255,7 @@ class Controller:
         return score
 
     def validate_state(self, pos, heading, maze):
-        """Checks if the mouse state is valid.
+        """Checks if the mouse's state is valid.
 
         Arguments:
             pos -- a list containing the [x, y] co-ordinates of the mouse.
@@ -321,6 +275,8 @@ class Controller:
 
         Arguments:
             rot -- the rotation in degrees.
+        Returns:
+            True if valid, False otherwise.
         """
         # Is this a valid rotation?
         if not rot in self.VALID_ROTATIONS:
@@ -334,6 +290,8 @@ class Controller:
 
         Arguments:
             move -- the move in steps.
+        Returns:
+            True if valid, False otherwise.
         """
         # Is the move valid?
         if not (isinstance(move, int) and (move in range(-self.MAX_STEPS_PER_MOVE, self.MAX_STEPS_PER_MOVE + 1))):
