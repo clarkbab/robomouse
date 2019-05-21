@@ -156,6 +156,12 @@ class Controller:
 
         # Run for the max number of iterations.
         while self.steps[self.run] < self.max_steps:
+            # Skip step if paused.
+            if self.paused:
+                input('Paused. Press Enter to continue...')
+                self.toggle_pause()
+                continue
+
             # Run a step.
             finished = self.run_step()
 

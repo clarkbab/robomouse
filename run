@@ -19,11 +19,6 @@ if __name__ == '__main__':
     parser.add_option('-s', '--max_steps', dest='max_steps', help='max number of steps per run.', default=1000, type='int') 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='log info.', default=False)
     opts, args = parser.parse_args()
-    
-    # Check opts.
-    if opts.pause and not opts.display:
-        print("Can't pause without display.")
-        sys.exit(1)
 
     # Create a maze based on input argument on command line.
     maze = Maze(opts.maze)
