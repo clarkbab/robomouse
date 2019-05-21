@@ -1,14 +1,17 @@
 import time
 import pdb
 import numpy as np
+import copy
 
 class Controller:
     HEADING_RANGE = (0, 360)
     VALID_HEADINGS = (0, 90, 180, 270)
     VALID_ROTATIONS = (0, 90, -90)
     MAX_STEPS = 3 
+    PLAN_RUN = 0
+    EXEC_RUN = 1
 
-    def __init__(self, mouse, maze, display=None, steps=10, delay=1000, paused=False, verbose=True):
+    def __init__(self, mouse, maze, display=None, steps=10, delay=1000, pause=False, verbose=True):
         """Creates a controller.
 
         Arguments:
@@ -17,15 +20,17 @@ class Controller:
             display -- a method of displaying the progress.
             steps -- the number of iterations in the game.
             delay -- the delay between iterations.
-            paused -- the initial state of the controller.
+            pause -- should we pause before runs.
             verbose -- prints info to the command line.
         """
         self.mouse = mouse
         self.maze = maze
         self.steps = steps
         self.delay = delay
-        self.step = 0
-        self.paused = paused
+        self.step = np.zeros(2)
+        self.pause = pause
+        if self.pause:
+            self.paused = True
         self.display = display
         self.verbose = verbose
 
@@ -42,33 +47,52 @@ class Controller:
             return
 
         # Set the state.
-        self.mouse_state = init_state
+        self.run = self.PLAN_RUN
+        self.init_state = init_state
+        self.mouse_state = copy.deepcopy(init_state)
+        self.reached_goal = False
 
         # Draw the mouse.
-        self.display.place_mouse(*init_state.values())
+        self.display.place_mouse(*self.mouse_state.values())
 
         # Register the pause handler.
-        self.display.screen.onkey(self.toggle_pause, 'space')
+        if self.pause:
+            self.display.screen.onkey(self.toggle_pause, 'space')
 
         # Hand control over to the GUI.
         self.display.listen(self.run_step, self.delay)
+
+    def start_execution(self):
+        # Clear the current mouse tracks.
+        self.display.clear_track()
+        
+        # Put into execution mode.
+        self.run = self.EXEC_RUN
+
+        # Reset the mouse state and position.
+        self.mouse_state = copy.deepcopy(self.init_state)
+        self.display.place_mouse(*self.mouse_state.values())
+
+        # Set up state.
+        self.reached_goal = False
+        if self.pause:
+            self.paused = True
+
+        # Begin steps.
+        self.enqueue_step()
 
     def run_step(self):
         """Runs one iteration of the maze problem.
 
         This method re-enqueues itself when the mouse is finished performing its turn.
         """
-        # Has the mouse reached the centre of the maze?
-        reached_goal = False
-
-        # If paused, enqueue a new step and finish.
-        if self.paused:
+        # Increment the step count if not paused.
+        if not (self.pause and self.paused):
+            self.step[self.run] += 1
+        else:
             if self.verbose: print('paused')
             self.enqueue_step()
             return
-
-        # Increment the step number.
-        self.step += 1
 
         # Get sensor readings from maze for mouse's current position and
         # heading.
@@ -85,10 +109,13 @@ class Controller:
             print(f"Move: {move}")
         
         # Return if mouse is finished planning.
-        if (rot, move) == ('RESET', 'RESET'):
-            if reached_goal:
+        if self.run == self.PLAN_RUN and (rot, move) == ('RESET', 'RESET'):
+            if self.reached_goal:
                 if self.verbose: print("Mouse finished planning.")
-                self.enqueue_step()
+                
+                # Start execution run.
+                self.start_execution()
+
                 return
             else:
                 if self.verbose: print("Mouse hasn't reached goal, can't reset.")
@@ -117,6 +144,16 @@ class Controller:
         # Write the new position to the display.
         self.display.move(self.mouse_state['pos'])
 
+        # Check if mouse has reached goal.
+        if (not self.reached_goal) and self.maze.reached_goal(self.mouse_state['pos']):
+            if self.verbose: print(f"Mouse reached goal {self.mouse_state['pos']}.")
+            self.reached_goal = True
+
+            # Check if mouse has completed the final run.
+            if self.run == self.EXEC_RUN:
+                self.display.close()
+                return
+
         # Enqueue another iteration.
         self.enqueue_step()
 
@@ -141,6 +178,7 @@ class Controller:
     def enqueue_step(self):
         """Enqueues another step.
         """
+        print('-----')
         self.display.sleep(self.run_step, self.delay)
 
     def toggle_pause(self):
@@ -174,6 +212,22 @@ class Controller:
             new_heading += self.HEADING_RANGE[1] 
 
         return new_heading
+
+    def score(self):
+        """Calculates the mouse's score for the run.
+        """
+        # Return nothing if the mouse hasn't finished the maze.
+        if not (self.run == self.EXEC_RUN and self.reached_goal):
+            print("Mouse not finished.")
+            return
+
+        # Steps in the planning round aren't penalised as highly.
+        plan_mult = 1 / 30
+
+        # Calculate the score.
+        score = self.step[self.EXEC_RUN] + plan_mult * self.step[self.PLAN_RUN] 
+
+        return score
 
     def valid_state(self, pos, heading):
         """Checks if the mouse state is valid.

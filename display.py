@@ -2,7 +2,7 @@ import turtle
 import pdb
 
 class Display:
-    def __init__(self, maze, square_size=20):
+    def __init__(self, maze, square_size=30):
         self.maze = maze
         self.square_size = square_size
         self.origin = maze.dim * square_size / -2
@@ -14,13 +14,20 @@ class Display:
         self.screen = turtle.Screen()
         self.screen.title('RoboMouse')
 
+        # Create the maze drawing tool.
+        self.maze_tool = turtle.Turtle()
+        self.maze_tool.pensize(3)
+        self.maze_tool.hideturtle()
+
+        # Create the mouse drawing tool.
+        self.mouse_tool = turtle.Turtle()
+        self.mouse_tool.pensize(2)
+        self.mouse_tool.color('red')
+
     def draw_maze(self):
         """Draws the maze structure.
         """
-        # Create the drawing tool.
-        self.tool = turtle.Turtle()
-        self.tool.pensize(3)
-        self.tool.hideturtle()
+        # Turn animation off to draw maze instantaneously.
         self.screen.tracer(0)
 
         # Draw walls of maze.
@@ -41,7 +48,7 @@ class Display:
                 if x == 0 and not self.maze.is_permissible([x, y], self.maze.WEST):
                     self.draw_wall((x, y), self.maze.WEST)
 
-        # Turn tracer back on.
+        # Turn animation back on.
         self.screen.tracer(1)
 
     def draw_wall(self, cell, side):
@@ -69,12 +76,12 @@ class Display:
             start = (self.origin + self.square_size * cell[0], self.origin + self.square_size * cell[1])
             heading = self.maze.NORTH
 
-        self.tool.penup()
-        self.tool.goto(*start)
-        self.tool.setheading(heading)
-        self.tool.pendown()
-        self.tool.forward(self.square_size)
-        self.tool.penup()
+        self.maze_tool.penup()
+        self.maze_tool.goto(*start)
+        self.maze_tool.setheading(heading)
+        self.maze_tool.pendown()
+        self.maze_tool.forward(self.square_size)
+        self.maze_tool.penup()
 
     def place_mouse(self, pos, heading):
         """places the mouse in the maze.
@@ -85,32 +92,28 @@ class Display:
             heading -- the heading the mouse has. a value in degrees from 0
                 (right) to 360, counter-clockwise.
         """
-        # Create the mouse drawing cursor.
-        self.mouse = turtle.Turtle()
-        self.mouse.pensize(2)
-        self.mouse.color('red')
-        self.mouse.penup()
 
         # Set the mouse location.
         x = self.origin + (pos[0] + 0.5) * self.square_size
         y = self.origin + (pos[1] + 0.5) * self.square_size
-        self.mouse.goto(x, y)
+        self.mouse_tool.penup()
+        self.mouse_tool.goto(x, y)
 
         # Set the heading.
-        self.mouse.setheading(heading)
+        self.mouse_tool.setheading(heading)
 
         # Put the pen down ready for drawing.
-        self.mouse.pendown()
+        self.mouse_tool.pendown()
 
     def set_heading(self, heading):
         # Set the mouse's heading.
-        self.mouse.setheading(heading)
+        self.mouse_tool.setheading(heading)
 
     def move(self, pos):
         # Get x, y coordinates.
         x = self.origin + (pos[0] + 0.5) * self.square_size
         y = self.origin + (pos[1] + 0.5) * self.square_size
-        self.mouse.goto(x, y)
+        self.mouse_tool.goto(x, y)
 
     def listen(self, callback, period):
         """sets focus on the turtlescreen and listens for events.
@@ -122,7 +125,12 @@ class Display:
         self.screen.listen()
         turtle.mainloop()
 
+    def close(self):
+        turtle.bye()
+
     def sleep(self, callback, period):
-        print('queueing timer with delay: {}'.format(period))
         self.screen.ontimer(callback, period)
+
+    def clear_track(self):
+        self.mouse_tool.clear()
 

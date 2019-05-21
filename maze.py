@@ -90,6 +90,23 @@ class Maze(object):
 
         return distance
 
+    def reached_goal(self, pos):
+        """Is the position within the goal?
+
+        Arguments:
+            pos -- the position.
+        Returns:
+            True if goal reached, else False.
+        """
+        # Both axes will have the same goal co-ordinates.
+        goal_coords = [self.dim / 2 -1, self.dim / 2]
+
+        # Check if position in goal.
+        if not (pos[0] in goal_coords and pos[1] in goal_coords):
+            return False
+
+        return True
+
     def valid_move(self, pos, heading, size):
         """Checks if the mouse's move is valid in the context of the maze.
 

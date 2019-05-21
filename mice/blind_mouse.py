@@ -12,6 +12,7 @@ class BlindMouse():
         self.location = [0, 0]
         self.heading = 'up'
         self.maze_dim = maze_dim
+        self.i = 0
 
     def next_move(self, sensors):
         '''
@@ -34,7 +35,19 @@ class BlindMouse():
         the maze) then returing the tuple ('Reset', 'Reset') will indicate to
         the tester to end the run and return the robot to the start.
         '''
-        rotation = random.choice([-90, 0, 90])
-        movement = random.choice(range(-3, 4))
+        moves = [
+            [0, 3],
+            [-90, 1],
+            [90, 1],
+            [-90, 2],
+            ['RESET', 'RESET'],
+            [0, 3],
+            [-90, 1],
+            [90, 1],
+            [-90, 2]
+        ]
+
+        rotation, movement = moves[self.i]
+        self.i += 1
 
         return rotation, movement

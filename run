@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_option('-D', '--display', action='store_true', dest='display', help='show display', default=False)
     parser.add_option('-M', '--maze', dest='maze', help='path to a maze file.')
     parser.add_option('-m', '--mouse', dest='mouse', help='path to a mouse file.')
-    parser.add_option('-p', '--paused', action='store_true', dest='paused', help='begin in paused state.', default=False)
+    parser.add_option('-p', '--pause', action='store_true', dest='pause', help='pause between runs', default=False)
     parser.add_option('-s', '--steps', dest='steps', help='max number of steps per run.', default=1000, type='int') 
     parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='log info.', default=False)
     opts, args = parser.parse_args()
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     # Create and place the mouse.
     mouse = BlindMouse(maze.dim)
-    init_state = { 'pos': np.array([0, 2]), 'heading': Maze.NORTH }
+    init_state = { 'pos': np.array([8, 2]), 'heading': Maze.NORTH }
 
     # Create manager.
     controller = Controller(
@@ -43,12 +43,14 @@ if __name__ == '__main__':
         display,
         steps=opts.steps,
         delay=opts.delay,
-        paused=opts.paused,
+        pause=opts.pause,
         verbose=opts.verbose
     )
 
     # Run planning round.
     controller.start(init_state)
 
-    print('finished')
+    # Print results.
+    print(f"Steps: {controller.step}")
+    print(f"Final score: {controller.score()}")
 
