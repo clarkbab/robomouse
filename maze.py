@@ -104,7 +104,7 @@ class Maze(object):
             heading -- the current heading.
             move -- the desired move.
         Returns:
-            A list of [x, y] components, showing the new position.
+            A list of [x, y] int components, showing the new position.
         """
         # Get x, y changes.
         dx, dy = move * self.HEADING_COMPONENTS_MAP[heading] 
@@ -112,7 +112,7 @@ class Maze(object):
         # Update x, y co-ordinates.
         x_new, y_new = pos[0] + dx, pos[1] + dy
 
-        return [x_new, y_new]
+        return [int(x_new), int(y_new)]
 
     def new_heading(self, heading, rot):
         """Calculates the new heading.
@@ -210,7 +210,7 @@ class Maze(object):
             pos -- a list containing the [x, y] co-ordinates of the mouse.
         """
         # Check that position is integer.
-        if not isinstance(pos[0], np.int64) or not isinstance(pos[1], np.int64):
+        if not isinstance(pos[0], int) or not isinstance(pos[1], int):
             print(f"Invalid pos {pos}, items should be ints.")
             return False
 

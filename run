@@ -1,9 +1,6 @@
 #! /usr/bin/env python3
 
-import time
 import sys
-import pdb
-import numpy as np
 from optparse import OptionParser
 
 from maze import Maze
@@ -37,7 +34,7 @@ if __name__ == '__main__':
         
     # Create and place the mouse.
     mouse = BlindMouse(maze.dim)
-    init_state = { 'pos': np.array([8, 2]), 'heading': Maze.NORTH }
+    init_state = { 'pos': [8, 2], 'heading': Maze.NORTH }
 
     # Create manager.
     controller = Controller(
