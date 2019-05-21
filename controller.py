@@ -1,8 +1,6 @@
 import time
-import pdb
 import numpy as np
 import copy
-import turtle
 
 class Controller:
     HEADING_RANGE = (0, 360)
@@ -13,68 +11,92 @@ class Controller:
     EXEC_RUN = 1
 
     def __init__(self, mouse, maze, init_state, max_steps=10, delay=1000, pause=False, verbose=True):
-        """Creates a controller.
+        """Creates a maze game controller.
 
         Arguments:
             mouse -- the Mouse who will navigate the maze.
             maze -- the Maze to navigate.
-            display -- a method of displaying the progress.
-            steps -- the number of iterations in the game.
-            delay -- the delay between iterations.
+            init_state -- the mouse's starting state.
+            max_steps -- the number of iterations in the game.
+            delay -- the delay in ms between iterations.
             pause -- should we pause before runs.
             verbose -- prints info to the command line.
         """
+        # Validate the initial state.
+        self.validate_state(*init_state.values(), maze)
+
         self.mouse = mouse
-        self.init_state = init_state
         self.maze = maze
+        self.init_state = init_state
         self.max_steps = max_steps
+        self.steps = np.zeros(2)
         self.delay = delay
-        self.step = np.zeros(2)
         self.pause = pause
-        self.paused = True if self.pause else False
         self.verbose = verbose
 
-        # Validate the initial state.
-        self.validate_state(*self.init_state.values())
-
-    def run(self):
-        self.planning_mode()
-        success = self.run_game()
-        if not success: return False
-        self.execution_mode()
-        return self.run_game()
-
     def run_with_display(self, display):
+        """Runs the maze game in display mode.
+
+        Arguments:
+            display -- the Display to write to.
+        Returns:
+            True, if the mouse successfully completed the game, False otherwise.
+        """
+        # Enter planning mode.
         self.planning_mode()
+
+        # Set up the display.
         self.display = display
         self.display.draw_maze()
         self.display.place_mouse(*self.mouse_state.values())
-        self.display.screen.onkey(self.toggle_pause, 'space')
-        self.display.screen.listen()
+
+        # Set up space bar pause.
+        self.display.on_space(self.toggle_pause)
+
+        # Start the planning phase.
         self.display.screen.ontimer(self.run_display_step, self.delay)
 
-        # Start the main loop, this must be the last line of the GUI
-        # application. Can be passed later with 'turtle.bye()'.
-        turtle.mainloop()
+        # Sets the screen to focus, to allow for key events.
+        self.display.screen.listen()
 
-        # Return False if not successful.
+        # Start the main loop, this must be the last line of the GUI
+        # application. Can be broken later with 'turtle.bye()'.
+        self.display.mainloop()
+
+        # If the mouse wasn't successful, return False.
         if not (self.run == self.EXEC_RUN and self.reached_goal):
             return False
 
         return True
 
     def planning_mode(self):
-        # Set the state.
+        """Sets up the controller state in preparation for a planning run.
+        """
+        # Pause if requested.
+        self.paused = True if self.pause else False
+        
+        # Set the run type.
         self.run = self.PLAN_RUN
+
+        # Reset the step counter.
+        self.steps[self.PLAN_RUN] = 0
+        
+        # Reset the mouse's state.
         self.mouse_state = copy.deepcopy(self.init_state)
+
+        # Reset the success flags.
         self.reached_goal = False
         self.planning_complete = False
 
     def run_display_step(self):
-        # Skip if paused.
+        """Handles the running of a step when in display mode.
+
+        Calls 'turtle.bye()' when mouse has finished, either successfully or otherwise.
+        """
+        # Skip step if paused.
         if self.paused:
             if self.verbose: print('paused')
-            self.display.screen.ontimer(self.run_display_step, self.delay)
+            self.display.sleep(self.run_display_step, self.delay)
             return
 
         # Run the step.
@@ -84,68 +106,85 @@ class Controller:
         self.display.set_heading(self.mouse_state['heading'])
         self.display.move(self.mouse_state['pos'])
        
-        # Enqueue another step if needed.
+        # Check if finished.
         if not finished:
-            self.display.screen.ontimer(self.run_display_step, self.delay)
+            # Enqueue another step if not finished.
+            self.display.sleep(self.run_display_step, self.delay)
             return 
         elif self.run == self.PLAN_RUN and self.planning_complete:
-            # Set execution mode starting state.
+            # If finished planning run, start the execution run.
             self.execution_mode()
 
             # Reset display.
             self.display.clear_track()
             self.display.place_mouse(*self.mouse_state.values())
             
-            self.display.screen.ontimer(self.run_display_step, self.delay)
+            # Start the next run.
+            self.display.sleep(self.run_display_step, self.delay)
             return
 
-        turtle.bye()
+        # Mouse has finished, exit Turtle main loop.
+        self.display.close()
 
     def execution_mode(self):
-        # Put into execution mode.
+        """Sets up the controller state in preparation for an execution run.
+        """
+        # Pause if requested.
+        self.paused = True if self.pause else False
+
+        # Set run type.
         self.run = self.EXEC_RUN
+
+        # Reset the step counter.
+        self.steps[self.EXEC_RUN] = 0
 
         # Reset the mouse state and position.
         self.mouse_state = copy.deepcopy(self.init_state)
 
-        # Reset goal state.
+        # Reset success flag.
         self.reached_goal = False
 
-        # Set to paused if necessary.
-        if self.pause: self.paused = True
+    def run(self):
+        """Runs the maze game in normal mode.
 
-    def run_game(self):
+        Returns:
+            True if mouse successfuly completed game, False otherwise.
+        """
+        # Set to planning mode.
+        self.planning_mode()
+
         # Run for the max number of iterations.
-        while self.step[self.run] < self.max_steps:
-
+        while self.steps[self.run] < self.max_steps:
             # Run a step.
             finished = self.run_step()
 
-            # Return success/error if finished run.
+            # Check if finished.
             if finished:
+                # If finished planning, start execution run.
                 if self.run == self.PLAN_RUN and self.planning_complete:
-                    return True
+                    self.execution_mode()
                 elif self.run == self.EXEC_RUN and self.reached_goal:
+                    # If finished execution, signal success.
                     return True
 
             # Sleep for specified delay.
             time.sleep(self.delay / 1000)
 
+        # We must have gone over the max steps, signal failure.
         return False
 
     def run_step(self):
         """Runs one iteration of the maze problem.
 
         Returns:
-            True, if more steps should run, otherwise False.
+            True if mouse finished run, else False.
         """
-        self.step[self.run] += 1
+        self.steps[self.run] += 1
 
-        # Get sensor readings from maze for mouse's current position and
-        # heading.
+        # Get sensor readings.
         readings = self.sensor_readings(*self.mouse_state.values())
 
-        # Update mouse's heading and position.
+        # Get mouse's desired move.
         rot, move = self.mouse.next_move(readings)
         
         if self.verbose:
@@ -156,7 +195,7 @@ class Controller:
             print(f"Rot: {rot}")
             print(f"Move: {move}")
         
-        # Return if mouse is finished planning.
+        # Check if mouse has finished planning.
         if self.run == self.PLAN_RUN and (rot, move) == ('RESET', 'RESET'):
             if self.reached_goal:
                 self.planning_complete = True
@@ -178,7 +217,7 @@ class Controller:
             return False
 
         # Update the mouse's position.
-        self.mouse_state['pos'] += move * self.heading_axis_map()[self.mouse_state['heading']]
+        self.mouse_state['pos'] += move * self.maze.move_components(self.mouse_state['heading'])
 
         # Check if mouse has reached goal.
         if (not self.reached_goal) and self.maze.reached_goal(self.mouse_state['pos']):
@@ -190,20 +229,23 @@ class Controller:
                 self.execution_complete = True
                 return True
 
+        # Mouse hasn't finished, keep going.
         return False
 
     def sensor_readings(self, pos, heading):
-        """Returns a tuple of sensor readings.
+        """Returns the sensor readings from the mouse.
 
         Arguments:
             pos -- the mouse's current position.
             heading -- the mouse's heading.
+        Returns:
+            A tuple of sensor readings, each giving the distance to the wall in the (left, middle, right) directions.
         """
         # Get left and right headings.
         l_head = self.rotate_heading(heading, -90)
         r_head = self.rotate_heading(heading, 90)
 
-        # Get distances to nearest wall in straight line.
+        # Get distances for each heading.
         dist = self.maze.dist_to_wall(pos, heading)
         l_dist = self.maze.dist_to_wall(pos, l_head) 
         r_dist = self.maze.dist_to_wall(pos, r_head) 
@@ -254,22 +296,21 @@ class Controller:
         plan_mult = 1 / 30
 
         # Calculate the score.
-        score = self.step[self.EXEC_RUN] + plan_mult * self.step[self.PLAN_RUN] 
+        score = self.steps[self.EXEC_RUN] + plan_mult * self.steps[self.PLAN_RUN] 
 
         return score
 
-    def validate_state(self, pos, heading):
+    def validate_state(self, pos, heading, maze):
         """Checks if the mouse state is valid.
 
         Arguments:
-            state -- a dict containing the keys:
-                pos -- a list containing the [x, y] co-ordinates of the mouse.
-                heading -- a number in degrees, must be a value from
-                    VALID_HEADINGS.
+            pos -- a list containing the [x, y] co-ordinates of the mouse.
+            heading -- a number in degrees, must be a value from VALID_HEADINGS.
+            maze -- the maze to validate against.
         """
         # Check the position exists in the maze.
-        if not self.maze.pos_exists(pos):
-            raise Exception(f"Pos {pos} doesn't exist.")
+        if not maze.pos_exists(pos):
+            raise Exception(f"Pos {pos} doesn't exist in maze.")
 
         # Check the heading is valid.
         if not heading in self.VALID_HEADINGS:

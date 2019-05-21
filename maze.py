@@ -90,6 +90,15 @@ class Maze(object):
 
         return distance
 
+    def move_components(self, heading):
+        """Returns the [x, y] components of a move in a certain heading.
+
+        Arguments:
+            heading -- the heading in degrees.
+        Returns:
+            A numpy array of the [x, y] co-ordinates for a move of magnitude one in the specified heading.
+        """
+
     def reached_goal(self, pos):
         """Is the position within the goal?
 
