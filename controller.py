@@ -71,11 +71,21 @@ class Controller:
         self.planning_complete = False
 
     def run_display_step(self):
+        # Skip if paused.
+        if self.paused:
+            if self.verbose: print('paused')
+            self.display.screen.ontimer(self.run_display_step, self.delay)
+            return
+
         # Run the step.
-        next_step = self.run_step()
+        finished = self.run_step()
+
+        # Update the display.
+        self.display.set_heading(self.mouse_state['heading'])
+        self.display.move(self.mouse_state['pos'])
        
         # Enqueue another step if needed.
-        if next_step:
+        if not finished:
             self.display.screen.ontimer(self.run_display_step, self.delay)
             return 
         elif self.run == self.PLAN_RUN and self.planning_complete:
@@ -107,9 +117,6 @@ class Controller:
     def run_game(self):
         # Run for the max number of iterations.
         while self.step[self.run] < self.max_steps:
-            if self.paused:
-                print('paused')
-                continue 
 
             # Run a step.
             finished = self.run_step()
@@ -120,6 +127,9 @@ class Controller:
                     return True
                 elif self.run == self.EXEC_RUN and self.reached_goal:
                     return True
+
+            # Sleep for specified delay.
+            time.sleep(self.delay / 1000)
 
         return False
 
