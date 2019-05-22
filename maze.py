@@ -205,7 +205,6 @@ class Maze(object):
         """
         # Check that starting pos is valid.
         if not self.pos_exists(pos):
-            print(f"Position {pos} doesn't exist in maze.")
             return False
             
         # Get the move direction. Positive or negative. 
@@ -221,8 +220,6 @@ class Maze(object):
 
         # Is the move size larger than the distance to the wall?
         if abs(size) > dist:
-            print(f"Moving {size} squares in heading {heading} from {pos} will "\
-                "take you through a wall.")
             return False
 
         return True
@@ -237,13 +234,11 @@ class Maze(object):
         """
         # Check that position is integer.
         if not isinstance(pos[0], int) or not isinstance(pos[1], int):
-            print(f"Invalid pos {pos}, items should be ints.")
             return False
 
         # Check against maze dimensions.
         if not (pos[0] >= 0 and pos[0] < self.dim) or not (pos[1] >= 0 and
             pos[1] < self.dim):
-            print(f"Invalid pos {pos}, outside maze dimensions.")
             return False
 
         return True

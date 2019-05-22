@@ -221,6 +221,8 @@ class Controller:
 
         # Is the move valid given the structure of the maze?
         if not self.maze.valid_move(*self.mouse_state.values(), move):
+            if self.verbose:
+                print(f"Moving {move} squares in heading {self.mouse_state['heading']} from {self.mouse_state['pos']} is invalid.")
             return False
 
         # Update the mouse's position.
@@ -249,8 +251,8 @@ class Controller:
         """
         # Return nothing if the mouse hasn't finished the maze.
         if not (self.run == self.EXEC_RUN and self.reached_goal):
-            print("Mouse not finished.")
-            return
+            if self.verbose: print("Mouse not finished.")
+            return None
 
         # Steps in the planning round aren't penalised as highly.
         plan_mult = 1 / 30

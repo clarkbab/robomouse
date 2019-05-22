@@ -2,6 +2,7 @@ import random
 
 class BlindMouse():
     def __init__(self, maze_dim):
+        pass
     
     def next_move(self, sensors):
         """Selects the move randomly from all options.

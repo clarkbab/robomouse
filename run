@@ -48,8 +48,8 @@ if __name__ == '__main__':
         controller.run()
 
     # Print results.
-    print(f"Steps: {controller.steps}")
-    print(f"Final score: {controller.score()}")
+    print(f"Steps taken: {controller.steps}")
+    print(f"Score: {controller.score()}")
 
     sys.exit(0)
 
