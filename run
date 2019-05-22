@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
 
 import sys
+import mice
 from optparse import OptionParser
 from maze import Maze
-from mice.blind_mouse import BlindMouse
 from display import Display
 from controller import Controller
 
@@ -27,7 +27,8 @@ if __name__ == '__main__':
     if opts.display: display = Display(maze)
         
     # Create and place the mouse.
-    mouse = BlindMouse(maze.dim)
+    mouse_class = getattr(mice, opts.mouse)
+    mouse = mouse_class(maze.dim)
     init_state = { 'pos': [0, 0], 'heading': Maze.NORTH }
 
     # Create the controller.
