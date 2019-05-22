@@ -192,7 +192,7 @@ class Controller:
         readings = self.maze.sensor_readings(*self.mouse_state.values())
 
         # Get mouse's desired move.
-        rot, move = self.mouse.next_move(readings)
+        rot, move = self.mouse.next_move(readings, self.reached_goal)
         
         if self.verbose:
             print('-----')
