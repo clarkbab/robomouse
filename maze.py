@@ -27,7 +27,8 @@ class Maze(object):
     }
 
     def __init__(self, filename):
-        '''
+        """Reads in a maze file.
+
         Maze objects have two main attributes:
         - dim: mazes should be square, with sides of even length. (integer)
         - walls: passages are coded as a 4-bit number, with a bit value taking
@@ -38,7 +39,10 @@ class Maze(object):
 
         The initialization function also performs some consistency checks for
         wall positioning.
-        '''
+
+        Arguments:
+            filename -- the path to the maze file.
+        """
         with open(filename, 'r') as f_in:
             # Read lines of file.
             lines = [line for line in f_in]

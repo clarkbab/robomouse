@@ -167,4 +167,3 @@ class Display:
         """
         self.screen.ontimer(callback, delay)
 
-

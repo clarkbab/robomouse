@@ -10,7 +10,7 @@ from controller import Controller
 if __name__ == '__main__':
     # Parse options.
     parser = OptionParser()
-    parser.add_option('-d', '--delay', dest='delay', help='delay between steps in ms.', default=1000, type='int')
+    parser.add_option('-d', '--delay', dest='delay', help='delay between steps in ms.', default=0, type='int')
     parser.add_option('-D', '--display', action='store_true', dest='display', help='show display', default=False)
     parser.add_option('-M', '--maze', dest='maze', help='path to a maze file.')
     parser.add_option('-m', '--mouse', dest='mouse', help='path to a mouse file.')
@@ -52,3 +52,4 @@ if __name__ == '__main__':
     print(f"Final score: {controller.score()}")
 
     sys.exit(0)
+
