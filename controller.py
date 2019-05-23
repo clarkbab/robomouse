@@ -301,10 +301,16 @@ class Controller:
         Returns:
             True if valid, False otherwise.
         """
-        # Is the move valid?
-        if not (isinstance(move, int) and (move in range(-self.MAX_STEPS_PER_MOVE, self.MAX_STEPS_PER_MOVE + 1))):
-            print(f"Invalid move: {move}")
+        # Is it an integer?
+        if not move % 1 == 0:
+            print(f"Move should be integer, got: {move}")
             return False
+
+        # Check it's in the correct range.
+        if not move in range(-self.MAX_STEPS_PER_MOVE, self.MAX_STEPS_PER_MOVE + 1):
+            print(f"Move should be in range ({-self.MAX_STEPS_PER_MOVE},{self.MAX_STEPS_PER_MOVE}), got {move}.")
+            return False
+            
             
         return True
 

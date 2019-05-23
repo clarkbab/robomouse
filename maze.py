@@ -148,10 +148,10 @@ class Maze(object):
         new_heading = heading + rot
 
         # Account for values outside of the accepted range.
-        if new_heading >= len(self.HEADING_RANGE):
-            new_heading -= len(self.HEADING_RANGE)
+        if new_heading >= max(self.HEADING_RANGE):
+            new_heading -= max(self.HEADING_RANGE)
         elif new_heading < min(self.HEADING_RANGE):
-            new_heading += len(self.HEADING_RANGE)
+            new_heading += max(self.HEADING_RANGE)
 
         return new_heading
         
