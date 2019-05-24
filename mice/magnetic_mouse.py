@@ -4,7 +4,7 @@ import numpy as np
 
 class MagneticMouse: # MagneticMouse?
     MAX_MOVE = 3
-    HEADING_RANGE = (0, 360)
+    HEADING_RANGE = range(360)
 
     # Map from reading index to rotation.
     SENSOR_ROTATION_MAP = {
@@ -50,10 +50,10 @@ class MagneticMouse: # MagneticMouse?
         new_heading = heading + rot
 
         # Account for values outside of the accepted range.
-        if new_heading >= max(self.HEADING_RANGE):
-            new_heading -= max(self.HEADING_RANGE)
+        if new_heading >= len(self.HEADING_RANGE):
+            new_heading -= len(self.HEADING_RANGE)
         elif new_heading < min(self.HEADING_RANGE):
-            new_heading += max(self.HEADING_RANGE)
+            new_heading += len(self.HEADING_RANGE)
 
         return new_heading
         
@@ -82,7 +82,6 @@ class MagneticMouse: # MagneticMouse?
 
             # Get the move vector.
             move_heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[i])
-            pdb.set_trace()
             move_vec = move * self.HEADING_COMPONENTS_MAP[move_heading]
             move_vecs[i] = move_vec
 
@@ -102,12 +101,10 @@ class MagneticMouse: # MagneticMouse?
         
         # Get the rotation and move to perform.
         rot = self.SENSOR_ROTATION_MAP[idx]
-        move = move_vecs[idx].max()
+        move = abs(move_vecs[idx]).max()
         
         # Update internal state.
         self.pos += move_vecs[idx]
         self.heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[idx])
-
-        pdb.set_trace()
 
         return rot, move

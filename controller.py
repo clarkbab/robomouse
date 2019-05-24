@@ -145,7 +145,7 @@ class Controller:
         # Reset success flag.
         self.reached_goal = False
 
-    def run(self):
+    def run_normal(self):
         """Runs the maze game in normal mode.
 
         Returns:
