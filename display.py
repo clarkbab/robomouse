@@ -20,6 +20,12 @@ class Display:
         self.screen = turtle.Screen()
         self.screen.title('RoboMouse')
 
+        # Create the index tool.
+        self.index_tool = turtle.Turtle()
+        self.index_tool.hideturtle()
+        self.index_tool.pensize(3)
+        self.index_tool.color('blue')
+
         # Create the maze drawing tool.
         self.maze_tool = turtle.Turtle()
         self.maze_tool.pensize(3)
@@ -37,6 +43,8 @@ class Display:
         """
         # Turn animation off to draw maze instantaneously.
         self.screen.tracer(0)
+
+        self.draw_indexes()
 
         # Draw walls of maze.
         for x in range(self.maze.dim):
@@ -58,6 +66,26 @@ class Display:
 
         # Turn animation back on.
         self.screen.tracer(1)
+
+    def draw_indexes(self):
+        # Draw x axis.
+        y_loc = self.origin - self.square_size
+        for i in range(self.maze.dim):
+            x_loc = self.origin + (i + 0.5) * self.square_size
+            self.index_tool.penup()
+            self.index_tool.goto(x_loc, y_loc)
+            self.index_tool.pendown()
+            self.index_tool.write(i, False, align='center', font=('Arial', 24, 'normal'))
+
+        # Draw y axis.
+        x_loc = self.origin - (2 / 3) * self.square_size
+        for i in range(self.maze.dim):
+            y_loc = self.origin + i * self.square_size
+            self.index_tool.penup()
+            self.index_tool.goto(x_loc, y_loc)
+            self.index_tool.pendown()
+            self.index_tool.write(i, False, align='center', font=('Arial', 24, 'normal'))
+
 
     def draw_wall(self, cell, side):
         """Draws a wall for a cell.

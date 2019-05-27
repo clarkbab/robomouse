@@ -33,10 +33,13 @@ class MagneticMouse: # MagneticMouse?
         unit_vec = vec / np.linalg.norm(vec)
         return unit_vec
         
-    def normalize(self, value):
-        """Squashes the centre component to the range 0.3 to 1.
+    def softmax(self, values):
+        """Performs the softmax function on the list of input values.
         """
-        return (1 - 0.3) * (value + self.MAX_MOVE) / (2 * self.MAX_MOVE) + 0.3
+        # Shift the values so the maximum is zero.
+        values -= np.max(values)
+
+        return np.exp(values) / np.sum(np.exp(values))
 
     def new_heading(self, heading, rot):
         """Calculates the new heading.
@@ -64,17 +67,21 @@ class MagneticMouse: # MagneticMouse?
         # Get indexes where readings are non-zero.
         non_zero_idx = np.where(np.array(sensors) > 0)[0]
 
-        # If all sensors are blank, turn around. This requires two moves.
+        # If all sensors are blank, turn around.
         if len(non_zero_idx) == 0:
-            self.dead_end = True
+            self.heading = self.new_heading(self.heading, -90)
             return -90, 0
             
-        move_vecs = np.zeros((len(sensors), 2), np.int8)
-        weights = np.zeros(len(sensors))
+        # Get a prob for each direction.
+        sensor_ids = []
+        weights = []
+        move_vecs = []
         for i, reading in enumerate(sensors):
-            # Give a zero weight if we can't move in that direction.
             if reading == 0:
                 continue
+                
+            # Register this index as movable.
+            sensor_ids.append(i)
 
             # Randomly select a move in that direction.
             max_move = min([reading, self.MAX_MOVE])
@@ -83,28 +90,25 @@ class MagneticMouse: # MagneticMouse?
             # Get the move vector.
             move_heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[i])
             move_vec = move * self.HEADING_COMPONENTS_MAP[move_heading]
-            move_vecs[i] = move_vec
+            move_vecs.append(move_vec)
 
             # How much of this move is towards the centre?
-            centre_comp = np.dot(move_vec, self.unit_centre())
+            weight = np.dot(move_vec, self.unit_centre())
+            weights.append(weight)
 
-            # Normalise this component to the range (0.3, 1). Why not (0, 1)? We still want -3
-            # moves to have a chance!
-            weight = self.normalize(centre_comp)
-            weights[i] = weight
-
-        # Smooth so values sum to one.
-        probs = weights / sum(weights)
+        # Apply the softmax function.
+        probs = self.softmax(weights)
         
         # Get an index based on the probs.
-        idx = np.random.choice(3, p=probs)
+        sensor_id = np.random.choice(sensor_ids, p=probs)
         
         # Get the rotation and move to perform.
-        rot = self.SENSOR_ROTATION_MAP[idx]
-        move = abs(move_vecs[idx]).max()
+        rot = self.SENSOR_ROTATION_MAP[sensor_id]
+        move_vec = move_vecs[sensor_ids.index(sensor_id)]
+        move = abs(move_vec).max()
         
         # Update internal state.
-        self.pos += move_vecs[idx]
-        self.heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[idx])
+        self.pos += move_vec
+        self.heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[sensor_id])
 
         return rot, move
