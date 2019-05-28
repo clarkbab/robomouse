@@ -1,9 +1,9 @@
 import random
 import pdb
 import numpy as np
-from .mouse_mixin import MouseMixin
+from .awareness_mixin import AwarenessMixin
 
-class DeadEndMouse(MouseMixin):
+class DeadEndMouse(AwarenessMixin):
     MAX_MOVE = 3
     HEADING_RANGE = range(360)
 
@@ -23,16 +23,17 @@ class DeadEndMouse(MouseMixin):
     }
 
     def __init__(self, maze_dim, init_state, verbose=False):
-        self.centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
+        """Sets up the mouse's initial state.
+        """
+        super().init(maze_dim, init_state)
+        self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
         self.dead_ends = np.zeros((maze_dim, maze_dim))
-        self.init_state = init_state
-        self.reset_state()
         self.verbose = verbose
 
     def unit_centre(self):
         """Finds the unit vector from the mouse to the centre.
         """
-        vec = self.centre - self.pos
+        vec = self.maze_centre - self.pos
         unit_vec = vec / np.linalg.norm(vec)
         return unit_vec
         
@@ -41,7 +42,6 @@ class DeadEndMouse(MouseMixin):
         """
         # Shift the values so the maximum is zero.
         values -= np.max(values)
-
         return np.exp(values) / np.sum(np.exp(values))
 
     def new_heading(self, heading, rot):
@@ -64,6 +64,8 @@ class DeadEndMouse(MouseMixin):
         return new_heading
 
     def random_move_vec(self, sensor_id, reading):
+        """Selects a random move from all moves in a direction.
+        """
         max_move = min([reading, self.MAX_MOVE])
         move_heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[sensor_id])
 
@@ -87,15 +89,23 @@ class DeadEndMouse(MouseMixin):
             return poss_move_vecs[idx]
 
     def next_move(self, sensors):
+        # Increment step count and check if we've gone over.
+        self.step += 1
+        if self.step > self.max_steps:
+            self.reset_state()
+            self.run = self.EXEC_RUN if self.run == self.PLAN_RUN else self.PLAN_RUN
+
         # Print mouse's assumed location.
         if self.verbose:
-            print(f"Mouse pos: {self.pos}")
-            print(f"Mouse heading: {self.heading}")
+            print(f"[MOUSE] Pos: {self.pos}")
+            print(f"[MOUSE] Heading: {self.heading}")
 
         # Check if we should reset.
         if self.reached_goal:
             # Reset state.
             self.reset_state()
+            self.run = self.EXEC_RUN
+            if self.verbose: print(f"[MOUSE] Finished planning.")
             return 'RESET', 'RESET'
 
         # Get a prob for each direction.
@@ -142,5 +152,16 @@ class DeadEndMouse(MouseMixin):
         # Update internal state.
         self.pos += move_vec
         self.heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[sensor_id])
+
+        # Check if we're in the goal.
+        if self.in_goal():
+            self.reached_goal = True
+            if self.verbose:
+                print(f"[MOUSE] Reached goal.")
+
+            if self.run == self.EXEC_RUN:
+                self.run = self.PLAN_RUN
+                self.reset_state()
+                print(f"[MOUSE] Finished.")
 
         return rot, move

@@ -1,20 +1,27 @@
 import random
 
 class BlindMouse():
-    def __init__(self, maze_dim, init_state):
+    def __init__(self, maze_dim, init_state, verbose=False):
+        self.reached_goal = False
         pass
+
+    def signal_reached_goal(self):
+        self.reached_goal = True
+
+    def signal_end_run(self):
+        self.reached_goal = False
     
-    def next_move(self, sensors, reached_goal):
+    def next_move(self, sensors):
         """Selects the move randomly from all options.
 
         Arguments:
             sensors -- a tuple of left, front and right sensor readings. Won't be needing those.
-            reached_goal -- a boolean indicating True if the goal has been reached.
         Returns:
             rot -- the next rotation in degrees.
             move -- an integer for the next move.
         """
-        if reached_goal:
+        if self.reached_goal:
+            self.reached_goal = False
             return 'RESET', 'RESET'     # We said it was blind, not stupid.
 
         # Get random rotation.

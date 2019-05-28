@@ -24,14 +24,12 @@ if __name__ == '__main__':
 
     # Create the maze.
     maze = Maze(opts.maze)
-    
-    # Create the display.
-    display = None
-    if opts.display: display = Display(maze)
         
     # Create and place the mouse.
     mouse_class = getattr(mice, opts.mouse)
-    init_state = { 'pos': [0, 0], 'heading': Maze.NORTH }
+    pos = [0, 0]
+    heading = Maze.NORTH
+    init_state = { 'pos': pos, 'heading': heading }
     mouse = mouse_class(maze.dim, init_state, verbose=opts.verbose)
 
     # Create the controller.
@@ -45,33 +43,31 @@ if __name__ == '__main__':
         verbose=opts.verbose
     )
 
-    # Run the game.
-    if display:
-        controller.run_with_display(display)
-
-        print(f"Score: {controller.score()}")
-    else:
-        # Run iterations.
-        scores = np.array([])
-        finished = 0
-        for i in range(opts.iterations):
+    # Run iterations.
+    scores = np.array([])
+    finished = 0
+    for i in range(opts.iterations):
+        if opts.display:
+            display = Display(maze)
+            controller.run_with_display(display)
+        else:
             controller.run_normal()
 
-            # Calculate score.
-            score = controller.score()
-            if score:
-                finished += 1
-                scores = np.append(scores, score)
-                
-        # Show results.
-        perc_fin = 100 * finished / opts.iterations
-        print(f"Finished: {perc_fin}% [{finished}/{opts.iterations}]")
+        # Calculate score.
+        score = controller.score()
+        if score:
+            finished += 1
+            scores = np.append(scores, score)
+            
+    # Show results.
+    perc_fin = 100 * finished / opts.iterations
+    print(f"Finished: {perc_fin}% [{finished}/{opts.iterations}]")
 
-        # We may not have finished any runs.
-        if len(scores) == 0:
-            print(f"No average score.")
-        else:
-            print(f"Average score: {scores.mean()}")
+    # We may not have finished any runs.
+    if len(scores) == 0:
+        print(f"No average score.")
+    else:
+        print(f"Average score: {scores.mean()}")
 
     sys.exit(0)
 

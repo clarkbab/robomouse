@@ -80,7 +80,7 @@ class Controller:
         self.run = self.PLAN_RUN
 
         # Reset the step counter.
-        self.steps[self.PLAN_RUN] = 0
+        self.steps[self.PLAN_RUN] = -1
         
         # Reset the mouse's state.
         self.mouse_state = copy.deepcopy(self.init_state)
@@ -102,6 +102,11 @@ class Controller:
 
         # Run the step.
         finished = self.run_step()
+
+        # If we've taken too long, exit.
+        if self.steps[self.run] >= self.max_steps:
+            self.display.close()
+            return
 
         # Update the display.
         self.display.set_heading(self.mouse_state['heading'])
@@ -137,7 +142,7 @@ class Controller:
         self.run = self.EXEC_RUN
 
         # Reset the step counter.
-        self.steps[self.EXEC_RUN] = 0
+        self.steps[self.EXEC_RUN] = -1
 
         # Reset the mouse state and position.
         self.mouse_state = copy.deepcopy(self.init_state)
@@ -155,7 +160,7 @@ class Controller:
         self.planning_mode()
 
         # Run for the max number of iterations.
-        while self.steps[self.run] < self.max_steps:
+        while self.steps[self.run] < (self.max_steps - 1):
             # Skip step if paused.
             if self.paused:
                 input('Paused. Press Enter to continue...')
@@ -177,8 +182,6 @@ class Controller:
             # Sleep for specified delay.
             time.sleep(self.delay / 1000)
 
-        # We must have gone over the max steps, signal failure.
-        self.mouse.signal_end_run()
         return False
 
     def run_step(self):
@@ -192,15 +195,18 @@ class Controller:
         # Get sensor readings.
         readings = self.maze.sensor_readings(*self.mouse_state.values())
 
+        if self.verbose:
+            print('-----')
+            print(f"Run: {self.run}")
+            print(f"Step: {self.steps[self.run]:.0f}")
+            print(f"Pos: {self.mouse_state['pos']}")
+            print(f"Heading: {self.mouse_state['heading']}")
+            print(f"Sensors: {readings}")
+
         # Get mouse's desired move.
         rot, move = self.mouse.next_move(readings)
         
         if self.verbose:
-            print('-----')
-            print(f"Run: {self.run}")
-            print(f"Pos: {self.mouse_state['pos']}")
-            print(f"Heading: {self.mouse_state['heading']}")
-            print(f"Sensors: {readings}")
             print(f"Rot: {rot}")
             print(f"Move: {move}")
         
@@ -208,7 +214,7 @@ class Controller:
         if self.run == self.PLAN_RUN and (rot, move) == ('RESET', 'RESET'):
             if self.reached_goal:
                 self.planning_complete = True
-                if self.verbose: print("Mouse finished planning.")
+                if self.verbose: print("Finished planning.")
                 return True
             else:
                 if self.verbose: print("Mouse hasn't reached goal, can't reset.")
@@ -232,14 +238,13 @@ class Controller:
 
         # Check if mouse has reached goal.
         if (not self.reached_goal) and self.maze.reached_goal(self.mouse_state['pos']):
-            if self.verbose: print(f"Mouse reached goal {self.mouse_state['pos']}.")
+            if self.verbose: print(f"Reached goal {self.mouse_state['pos']}.")
             self.reached_goal = True
-            self.mouse.signal_reached_goal()
 
             # Check if mouse has completed the final run.
             if self.run == self.EXEC_RUN:
+                if self.verbose: print(f"Finished.")
                 self.execution_complete = True
-                self.mouse.signal_end_run()
                 return True
 
         # Mouse hasn't finished, keep going.
@@ -255,7 +260,6 @@ class Controller:
         """
         # Return nothing if the mouse hasn't finished the maze.
         if not (self.run == self.EXEC_RUN and self.reached_goal):
-            if self.verbose: print("Mouse not finished.")
             return None
 
         # Steps in the planning round aren't penalised as highly.
