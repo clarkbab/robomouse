@@ -178,6 +178,7 @@ class Controller:
             time.sleep(self.delay / 1000)
 
         # We must have gone over the max steps, signal failure.
+        self.mouse.signal_end_run()
         return False
 
     def run_step(self):
@@ -192,10 +193,11 @@ class Controller:
         readings = self.maze.sensor_readings(*self.mouse_state.values())
 
         # Get mouse's desired move.
-        rot, move = self.mouse.next_move(readings, self.reached_goal)
+        rot, move = self.mouse.next_move(readings)
         
         if self.verbose:
             print('-----')
+            print(f"Run: {self.run}")
             print(f"Pos: {self.mouse_state['pos']}")
             print(f"Heading: {self.mouse_state['heading']}")
             print(f"Sensors: {readings}")
@@ -232,10 +234,12 @@ class Controller:
         if (not self.reached_goal) and self.maze.reached_goal(self.mouse_state['pos']):
             if self.verbose: print(f"Mouse reached goal {self.mouse_state['pos']}.")
             self.reached_goal = True
+            self.mouse.signal_reached_goal()
 
             # Check if mouse has completed the final run.
             if self.run == self.EXEC_RUN:
                 self.execution_complete = True
+                self.mouse.signal_end_run()
                 return True
 
         # Mouse hasn't finished, keep going.

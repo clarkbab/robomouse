@@ -21,9 +21,9 @@ class MagneticMouse: # MagneticMouse?
         270: np.array([-1, 0], dtype=np.int8)
     }
 
-    def __init__(self, maze_dim):
-        self.pos = np.array([0, 0], dtype=np.int8)
-        self.heading = 0
+    def __init__(self, maze_dim, init_state):
+        self.pos = np.array(init_state['pos'], dtype=np.int8)
+        self.heading = init_state['heading'] 
         self.centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
 
     def unit_centre(self):

@@ -12,7 +12,7 @@ class SoreHeadedMouse:
         2: 90
     }
 
-    def __init__(self, maze_dim):
+    def __init__(self, maze_dim, init_state):
         # Set up state.
         self.dead_end = False
         pass

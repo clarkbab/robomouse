@@ -11,9 +11,9 @@ class MemoryMouse:
         2: 90
     }
 
-    def __init__(self, maze_dim):
-        self.pos = np.array([0, 0])
-        self.heading = 0
+    def __init__(self, maze_dim, init_state):
+        self.pos = np.array(init_state['pos'])
+        self.heading = init_state['heading']
         self.memory = np.zeros(maze_dim, maze_dim)
         self.memory[0, 0] = 1
         pass

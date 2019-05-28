@@ -31,8 +31,8 @@ if __name__ == '__main__':
         
     # Create and place the mouse.
     mouse_class = getattr(mice, opts.mouse)
-    mouse = mouse_class(maze.dim)
     init_state = { 'pos': [0, 0], 'heading': Maze.NORTH }
+    mouse = mouse_class(maze.dim, init_state, verbose=opts.verbose)
 
     # Create the controller.
     controller = Controller(
@@ -65,7 +65,7 @@ if __name__ == '__main__':
                 
         # Show results.
         perc_fin = 100 * finished / opts.iterations
-        print(f"Finished: {perc_fin}%")
+        print(f"Finished: {perc_fin}% [{finished}/{opts.iterations}]")
 
         # We may not have finished any runs.
         if len(scores) == 0:

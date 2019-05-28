@@ -1,7 +1,7 @@
 import random
 
 class BlindMouse():
-    def __init__(self, maze_dim):
+    def __init__(self, maze_dim, init_state):
         pass
     
     def next_move(self, sensors, reached_goal):
