@@ -1,8 +1,9 @@
 import random
 import pdb
 import numpy as np
+from .mouse_mixin import MouseMixin
 
-class DeadEndMouse:
+class DeadEndMouse(MouseMixin):
     MAX_MOVE = 3
     HEADING_RANGE = range(360)
 
@@ -22,14 +23,11 @@ class DeadEndMouse:
     }
 
     def __init__(self, maze_dim, init_state, verbose=False):
-        self.init_state = init_state
-        self.pos = np.array(init_state['pos'], dtype=np.int8)
-        self.heading = init_state['heading'] 
         self.centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
         self.dead_ends = np.zeros((maze_dim, maze_dim))
+        self.init_state = init_state
+        self.reset_state()
         self.verbose = verbose
-        self.run = 0
-        self.reached_goal = False
 
     def unit_centre(self):
         """Finds the unit vector from the mouse to the centre.
@@ -88,23 +86,6 @@ class DeadEndMouse:
             idx = np.random.choice(len(poss_move_vecs))
             return poss_move_vecs[idx]
 
-    def reset_state(self):
-        self.reached_goal = False
-        self.pos = np.array(self.init_state['pos'], dtype=np.int8)
-        self.heading = self.init_state['heading'] 
-
-    def signal_reached_goal(self):
-        """Sent by the controller when mouse reaches goal.
-        """
-        self.reached_goal = True
-
-    def signal_end_run(self):
-        """Sent by the controller when run ends.
-        
-        Run could end due to successfully reaching centre, or timeout.
-        """
-        self.reset_state()
-        
     def next_move(self, sensors):
         # Print mouse's assumed location.
         if self.verbose:
