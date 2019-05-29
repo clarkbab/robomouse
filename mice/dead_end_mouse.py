@@ -96,6 +96,32 @@ class DeadEndMouse(AwarenessMixin):
             print(f"[MOUSE] Pos: {self.pos}")
             print(f"[MOUSE] Heading: {self.heading}")
 
+        # Update the step.
+        self.step += 1
+
+        # Update mouse's state.
+        rot, move = self.make_move(sensors)
+
+        # Check if we're in the goal.
+        if self.in_goal():
+            self.reached_goal = True
+            if self.verbose:
+                print(f"[MOUSE] Reached goal.")
+
+            if self.run == self.EXEC_RUN:
+                self.start_planning()
+                self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
+                if self.verbose: print(f"[MOUSE] Finished.")
+
+        # Increment the step count.
+        if self.step > (self.max_steps - 1):
+            self.start_planning()
+            self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
+            if self.verbose: print('[MOUSE] Exceeded max steps.')
+
+        return rot, move
+
+    def make_move(self, sensors):
         # Check if we should reset.
         if self.reached_goal:
             if self.verbose: print(f"[MOUSE] Finished planning.")
@@ -130,10 +156,6 @@ class DeadEndMouse(AwarenessMixin):
 
             # Turn around.
             self.update_state([0, 0], -90)
-            if self.increment():
-                if self.verbose: print('[MOUSE] Exceeded max steps.')
-                self.start_planning()
-                self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
             return -90, 0
 
         # Apply the softmax function.
@@ -149,22 +171,5 @@ class DeadEndMouse(AwarenessMixin):
         
         # Update internal state.
         self.update_state(move_vec, rot) 
-
-        # Check if we're in the goal.
-        if self.in_goal():
-            self.reached_goal = True
-            if self.verbose:
-                print(f"[MOUSE] Reached goal.")
-
-            if self.run == self.EXEC_RUN:
-                self.start_planning()
-                self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
-                print(f"[MOUSE] Finished.")
-
-        # Increment the step count.
-        if self.increment():
-            if self.verbose: print('[MOUSE] Exceeded max steps.')
-            self.start_planning()
-            self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
 
         return rot, move
