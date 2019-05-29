@@ -22,10 +22,10 @@ class DeadEndMouse(AwarenessMixin):
         270: np.array([-1, 0], dtype=np.int8)
     }
 
-    def __init__(self, maze_dim, init_state, verbose=False):
+    def __init__(self, maze_dim, init_state, max_steps, verbose):
         """Sets up the mouse's initial state.
         """
-        super().init(maze_dim, init_state)
+        super().init(maze_dim, init_state, max_steps, verbose)
         self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
         self.dead_ends = np.zeros((maze_dim, maze_dim))
         self.verbose = verbose
@@ -89,23 +89,17 @@ class DeadEndMouse(AwarenessMixin):
             return poss_move_vecs[idx]
 
     def next_move(self, sensors):
-        # Increment step count and check if we've gone over.
-        self.step += 1
-        if self.step > self.max_steps:
-            self.reset_state()
-            self.run = self.EXEC_RUN if self.run == self.PLAN_RUN else self.PLAN_RUN
-
         # Print mouse's assumed location.
         if self.verbose:
+            print(f"[MOUSE] Run: {self.run}")
+            print(f"[MOUSE] Step: {self.step}")
             print(f"[MOUSE] Pos: {self.pos}")
             print(f"[MOUSE] Heading: {self.heading}")
 
         # Check if we should reset.
         if self.reached_goal:
-            # Reset state.
-            self.reset_state()
-            self.run = self.EXEC_RUN
             if self.verbose: print(f"[MOUSE] Finished planning.")
+            self.start_execution()
             return 'RESET', 'RESET'
 
         # Get a prob for each direction.
@@ -135,7 +129,11 @@ class DeadEndMouse(AwarenessMixin):
             self.dead_ends[tuple(self.pos)] = 1
 
             # Turn around.
-            self.heading = self.new_heading(self.heading, -90)
+            self.update_state([0, 0], -90)
+            if self.increment():
+                if self.verbose: print('[MOUSE] Exceeded max steps.')
+                self.start_planning()
+                self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
             return -90, 0
 
         # Apply the softmax function.
@@ -150,8 +148,7 @@ class DeadEndMouse(AwarenessMixin):
         move = abs(move_vec).max()
         
         # Update internal state.
-        self.pos += move_vec
-        self.heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[sensor_id])
+        self.update_state(move_vec, rot) 
 
         # Check if we're in the goal.
         if self.in_goal():
@@ -160,8 +157,14 @@ class DeadEndMouse(AwarenessMixin):
                 print(f"[MOUSE] Reached goal.")
 
             if self.run == self.EXEC_RUN:
-                self.run = self.PLAN_RUN
-                self.reset_state()
+                self.start_planning()
+                self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
                 print(f"[MOUSE] Finished.")
+
+        # Increment the step count.
+        if self.increment():
+            if self.verbose: print('[MOUSE] Exceeded max steps.')
+            self.start_planning()
+            self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
 
         return rot, move

@@ -12,6 +12,12 @@ class Display:
         self.maze = maze
         self.square_size = square_size
         self.origin = maze.dim * square_size / -2
+        
+        # For some reason turtle crashes when we reboot the screen..
+        try:
+            turtle.Turtle()
+        except turtle.Terminator:
+            pass
 
         # Set North to 0 degrees.
         turtle.mode('logo')
@@ -176,6 +182,7 @@ class Display:
     def close(self):
         """Closes the display.
         """
+        print('closing screen')
         turtle.bye()
 
     def on_space(self, callback):

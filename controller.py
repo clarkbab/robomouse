@@ -104,7 +104,7 @@ class Controller:
         finished = self.run_step()
 
         # If we've taken too long, exit.
-        if self.steps[self.run] >= self.max_steps:
+        if self.steps[self.run] >= (self.max_steps - 1):
             self.display.close()
             return
 
