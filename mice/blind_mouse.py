@@ -1,15 +1,9 @@
-import random
+import pdb
+import numpy as np
 
 class BlindMouse():
-    def __init__(self, maze_dim, init_state, verbose=False):
-        self.reached_goal = False
+    def __init__(self, maze_dim, init_state, max_steps, verbose):
         pass
-
-    def signal_reached_goal(self):
-        self.reached_goal = True
-
-    def signal_end_run(self):
-        self.reached_goal = False
     
     def next_move(self, sensors):
         """Selects the move randomly from all options.
@@ -20,17 +14,19 @@ class BlindMouse():
             rot -- the next rotation in degrees.
             move -- an integer for the next move.
         """
-        if self.reached_goal:
-            self.reached_goal = False
-            return 'RESET', 'RESET'     # We said it was blind, not stupid.
-
-        # Get random rotation.
+        # A certain percentage of the time we should try to reset.
+        p = 0.05
+        reset = np.random.choice([0, 1], p=[(1 - p), p])
+        if reset:
+            return 'RESET', 'RESET'
+        
+        # Get random rotation. Assign a lower prob to reset.
         rot_opts = [-90, 0, 90]
-        rot = random.choice(rot_opts)
+        rot = np.random.choice(rot_opts)
 
         # Get random move.
         move_opts = range(-3, 4)
-        move = random.choice(move_opts)
+        move = np.random.choice(move_opts)
 
         return rot, move
 
