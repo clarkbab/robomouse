@@ -2,7 +2,7 @@ import pdb
 import numpy as np
 
 class BlindMouse():
-    def __init__(self, maze_dim, init_state, max_steps, verbose):
+    def __init__(self, maze_dim, init_state, verbose):
         pass
     
     def next_move(self, sensors):

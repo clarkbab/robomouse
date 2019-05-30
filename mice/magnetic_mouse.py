@@ -22,10 +22,10 @@ class MagneticMouse(AwarenessMixin):
         270: np.array([-1, 0], dtype=np.int8)
     }
 
-    def __init__(self, maze_dim, init_state, max_steps, verbose):
+    def __init__(self, maze_dim, init_state, verbose):
         """Sets up the mouse's initial state.
         """
-        super().init(maze_dim, init_state, max_steps, verbose)
+        super().init(maze_dim, init_state, verbose)
         self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
         self.dead_ends = np.zeros((maze_dim, maze_dim))
         self.verbose = verbose
@@ -92,12 +92,8 @@ class MagneticMouse(AwarenessMixin):
         # Print mouse's assumed location.
         if self.verbose:
             print(f"[MOUSE] Run: {self.run}")
-            print(f"[MOUSE] Step: {self.step}")
             print(f"[MOUSE] Pos: {self.pos}")
             print(f"[MOUSE] Heading: {self.heading}")
-
-        # Update the step.
-        self.step += 1
 
         # Update mouse's state.
         rot, move = self.make_move(sensors)
@@ -109,15 +105,7 @@ class MagneticMouse(AwarenessMixin):
                 print(f"[MOUSE] Reached goal.")
 
             if self.run == self.EXEC_RUN:
-                self.start_planning()
-                self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
                 if self.verbose: print(f"[MOUSE] Finished.")
-
-        # Increment the step count.
-        if self.step > (self.max_steps - 1):
-            self.start_planning()
-            self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
-            if self.verbose: print('[MOUSE] Exceeded max steps.')
 
         return rot, move
 

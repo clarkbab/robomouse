@@ -31,7 +31,7 @@ if __name__ == '__main__':
     pos = [0, 0]
     heading = Maze.NORTH
     init_state = { 'pos': pos, 'heading': heading }
-    mouse = mouse_class(maze.dim, init_state, opts.max_steps, opts.verbose)
+    mouse = mouse_class(maze.dim, init_state, opts.verbose)
 
     # Create the controller.
     controller = Controller(

@@ -26,7 +26,9 @@ class Controller:
         # Validate the initial state.
         self.validate_state(*init_state.values(), maze)
 
-        self.mouse = mouse
+        # Keep record of mouse's original state. This prevents the mouse from persisting state between runs.
+        self.initial_mouse = mouse
+
         self.maze = maze
         self.init_state = init_state
         self.max_steps = max_steps
@@ -73,6 +75,9 @@ class Controller:
     def planning_mode(self):
         """Sets up the controller state in preparation for a planning run.
         """
+        # Create a new copy of mouse.
+        self.mouse = copy.deepcopy(self.initial_mouse)
+
         # Pause if requested.
         self.paused = True if self.pause else False
         
