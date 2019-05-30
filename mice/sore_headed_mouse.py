@@ -12,12 +12,10 @@ class SoreHeadedMouse:
         2: 90
     }
 
-    def __init__(self, maze_dim, init_state):
-        # Set up state.
-        self.dead_end = False
+    def __init__(self, maze_dim, init_state, max_steps, verbose):
         pass
 
-    def next_move(self, sensors, reached_goal):
+    def next_move(self, sensors):
         """Selects the move randomly, but avoids walls. He's sick of banging his head.
 
         Arguments:
@@ -27,18 +25,17 @@ class SoreHeadedMouse:
             rot -- the next rotation in degrees.
             move -- an integer for the next move.
         """
-        if reached_goal:
-            return 'RESET', 'RESET'     # We said it was blind, not stupid.
-        elif self.dead_end:
-            self.dead_end = False
-            return -90, 0
+        # A certain percentage of the time we should try to reset.
+        p = 0.05
+        reset = np.random.choice([0, 1], p=[(1 - p), p])
+        if reset:
+            return 'RESET', 'RESET'
 
         # Get indexes where readings are non-zero.
         non_zero_idx = np.where(np.array(sensors) > 0)[0]
 
-        # If all sensors are blank, turn around. This requires two moves.
+        # If all sensors are blank, turn around.
         if len(non_zero_idx) == 0:
-            self.dead_end = True
             return -90, 0
         
         # Choose a rotation randomly from those directions. 
