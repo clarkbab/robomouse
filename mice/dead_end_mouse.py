@@ -1,9 +1,9 @@
 import random
 import pdb
 import numpy as np
-from .awareness_mixin import AwarenessMixin
+from mice.mixins import StateMixin
 
-class DeadEndMouse(AwarenessMixin):
+class DeadEndMouse(StateMixin):
     MAX_MOVE = 3
 
     # Map from reading index to rotation.
@@ -13,8 +13,7 @@ class DeadEndMouse(AwarenessMixin):
         2: 90
     }
 
-    def __init__(self, maze_dim, init_state, max_steps, verbose):
-        super().init(maze_dim, init_state, max_steps, verbose)
+    def __init__(self, maze_dim, init_state, verbose):
         self.dead_ends = np.zeros((maze_dim, maze_dim))
         pass
 
@@ -59,22 +58,35 @@ class DeadEndMouse(AwarenessMixin):
         if reset:
             return 'RESET', 'RESET'
 
-        # Get indexes where readings are non-zero.
-        non_zero_idx = np.where(np.array(sensors) > 0)[0]
+        # Get a prob for each direction.
+        sensor_ids = []
+        move_vecs = np.ndarray((0, 2), dtype=np.int8)
+        for i, reading in enumerate(sensors):
+            if reading == 0: continue
 
-        # If all sensors are blank, turn around.
-        if len(non_zero_idx) == 0:
+            # Randomly select a move in sensor's direction.
+            move_vec = self.random_move_vec(i, reading) 
+            
+            # Maybe we can't move in this direction because it's a dead end.
+            if move_vec is None: continue
+            move_vecs = np.vstack((move_vecs, move_vec))
+            
+            # Register this index as movable.
+            sensor_ids.append(i)
+
+        # If no possible moves, mark dead end and turn around. 
+        if len(move_vecs) == 0:
+            # Mark dead end on map.
             self.dead_ends[tuple(self.pos)] = 1
-            self.update_state([0, 0], -90)
             return -90, 0
         
-        # Choose a rotation randomly from those directions. 
-        idx = random.choice(non_zero_idx)
-        rot = self.INDEX_ROTATION_MAP[idx]
+        # Get an index based on the probs.
+        sensor_id = np.random.choice(sensor_ids)
         
-        # Choose a random move in the forward direction.
-        max_move = min([sensors[idx], self.MAX_MOVE])
-        move = random.choice(range(1, max_move + 1))
-
+        # Get the rotation and move to perform.
+        rot = self.SENSOR_ROTATION_MAP[sensor_id]
+        move_vec = move_vecs[sensor_ids.index(sensor_id)]
+        move = abs(move_vec).max()
+        
         return rot, move
 

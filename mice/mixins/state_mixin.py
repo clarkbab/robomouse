@@ -1,6 +1,6 @@
 import numpy as np
 
-class AwarenessMixin:
+class StateMixin:
     PLAN_RUN = 0
     EXEC_RUN = 1
     
@@ -25,6 +25,25 @@ class AwarenessMixin:
     def start_execution(self):
         self.run = self.EXEC_RUN
         self.reset_state()
+
+    def new_heading(self, heading, rot):
+        """Calculates the new heading.
+
+        Arguments:
+            heading -- the heading in degrees.
+            rot -- the rotation in degrees.
+        Returns:
+            the new heading wrapped to the range (0, 360].
+        """
+        new_heading = heading + rot
+
+        # Account for values outside of the accepted range.
+        if new_heading >= len(self.HEADING_RANGE):
+            new_heading -= len(self.HEADING_RANGE)
+        elif new_heading < min(self.HEADING_RANGE):
+            new_heading += len(self.HEADING_RANGE)
+
+        return new_heading
 
     def in_goal(self):
         """Checks if we're in the centre of the maze.

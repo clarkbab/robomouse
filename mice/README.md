@@ -1,23 +1,27 @@
-# Mice
+## Contents
+
+### Mice
 
 - [Blind Mouse](#blind-mouse)
 - [Danger Mouse](#danger-mouse)
 - [Reversing Danger Mouse](#reversing-danger-mouse)
 
-[Table of Results](#table-of-results)
+[Results](#results)
 
-## Blind Mouse
+## Mice
+
+### Blind Mouse
 
 Blind as a bat, doesn't make use of sensor readings. Makes random forward moves in any direction, regardless of whether there is a wall in the way or not. Has a 5% chance of calling `RESET` on every move.
 
-## Danger Mouse
+### Danger Mouse
 
 Can sense danger, e.g. walls. Looks at the sensor readings to calculate the set of possible forward moves and randomly selects
 one. Like the Blind Mouse it has a 5% chance of calling 'RESET' on every move.
 
-## Reversing Danger Mouse
+### Reversing Danger Mouse
 
-## Table of Results
+### Results
 
 The following results are for n=1000 trial runs.
 

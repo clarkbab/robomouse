@@ -1,9 +1,9 @@
 import random
 import pdb
 import numpy as np
-from .awareness_mixin import AwarenessMixin
+from mice.mixins import StateMixin
 
-class MagneticMouse(AwarenessMixin):
+class MagneticMouse(StateMixin):
     MAX_MOVE = 3
     HEADING_RANGE = range(360)
 
@@ -43,25 +43,6 @@ class MagneticMouse(AwarenessMixin):
         # Shift the values so the maximum is zero.
         values -= np.max(values)
         return np.exp(values) / np.sum(np.exp(values))
-
-    def new_heading(self, heading, rot):
-        """Calculates the new heading.
-
-        Arguments:
-            heading -- the heading in degrees.
-            rot -- the rotation in degrees.
-        Returns:
-            the new heading wrapped to the range (0, 360].
-        """
-        new_heading = heading + rot
-
-        # Account for values outside of the accepted range.
-        if new_heading >= len(self.HEADING_RANGE):
-            new_heading -= len(self.HEADING_RANGE)
-        elif new_heading < min(self.HEADING_RANGE):
-            new_heading += len(self.HEADING_RANGE)
-
-        return new_heading
 
     def random_move_vec(self, sensor_id, reading):
         """Selects a random move from all moves in a direction.
