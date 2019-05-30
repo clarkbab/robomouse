@@ -12,12 +12,10 @@ class ReversingSoreHeadedMouse:
         2: 90
     }
 
-    def __init__(self, maze_dim, init_state):
-        # Set up state.
-        self.dead_end = False
+    def __init__(self, maze_dim, init_state, max_steps, verbose):
         pass
 
-    def next_move(self, sensors, reached_goal):
+    def next_move(self, sensors):
         """Selects the move randomly, but avoids walls. He's sick of banging his head.
 
         Arguments:
@@ -27,15 +25,18 @@ class ReversingSoreHeadedMouse:
             rot -- the next rotation in degrees.
             move -- an integer for the next move.
         """
-        if reached_goal:
-            return 'RESET', 'RESET'     # We said it was blind, not stupid.
+        # A certain percentage of the time we should try to reset.
+        p = 0.05
+        reset = np.random.choice([0, 1], p=[(1 - p), p])
+        if reset:
+            return 'RESET', 'RESET'
 
         # Get indexes where readings are non-zero.
         non_zero_idx = np.where(np.array(sensors) > 0)[0]
 
         # If all sensors are blank, back up the truck.
         if len(non_zero_idx) == 0:
-            return 0, random.choice(range(-3, 0))
+            return 0, np.random.choice(range(-3, 0))
         
         # Choose a rotation randomly from those directions. 
         idx = random.choice(non_zero_idx)
