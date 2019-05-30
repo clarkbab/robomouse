@@ -2,7 +2,7 @@ import random
 import pdb
 import numpy as np
 
-class SoreHeadedMouse:
+class ReversingDangerMouse:
     MAX_MOVE = 3
 
     # Map from reading index to rotation.
@@ -34,9 +34,9 @@ class SoreHeadedMouse:
         # Get indexes where readings are non-zero.
         non_zero_idx = np.where(np.array(sensors) > 0)[0]
 
-        # If all sensors are blank, turn around.
+        # If all sensors are blank, back up the truck.
         if len(non_zero_idx) == 0:
-            return -90, 0
+            return 0, np.random.choice(range(-3, 0))
         
         # Choose a rotation randomly from those directions. 
         idx = random.choice(non_zero_idx)

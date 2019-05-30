@@ -5,63 +5,18 @@ from .awareness_mixin import AwarenessMixin
 
 class DeadEndMouse(AwarenessMixin):
     MAX_MOVE = 3
-    HEADING_RANGE = range(360)
 
     # Map from reading index to rotation.
-    SENSOR_ROTATION_MAP = {
+    INDEX_ROTATION_MAP = {
         0: -90,
         1: 0,
         2: 90
     }
 
-    # Maps a heading to its axial components.
-    HEADING_COMPONENTS_MAP = {
-        0: np.array([0, 1], dtype=np.int8),
-        90: np.array([1, 0], dtype=np.int8),
-        180: np.array([0, -1], dtype=np.int8),
-        270: np.array([-1, 0], dtype=np.int8)
-    }
-
     def __init__(self, maze_dim, init_state, max_steps, verbose):
-        """Sets up the mouse's initial state.
-        """
         super().init(maze_dim, init_state, max_steps, verbose)
-        self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
         self.dead_ends = np.zeros((maze_dim, maze_dim))
-        self.verbose = verbose
-
-    def unit_centre(self):
-        """Finds the unit vector from the mouse to the centre.
-        """
-        vec = self.maze_centre - self.pos
-        unit_vec = vec / np.linalg.norm(vec)
-        return unit_vec
-        
-    def softmax(self, values):
-        """Performs the softmax function on the list of input values.
-        """
-        # Shift the values so the maximum is zero.
-        values -= np.max(values)
-        return np.exp(values) / np.sum(np.exp(values))
-
-    def new_heading(self, heading, rot):
-        """Calculates the new heading.
-
-        Arguments:
-            heading -- the heading in degrees.
-            rot -- the rotation in degrees.
-        Returns:
-            the new heading wrapped to the range (0, 360].
-        """
-        new_heading = heading + rot
-
-        # Account for values outside of the accepted range.
-        if new_heading >= len(self.HEADING_RANGE):
-            new_heading -= len(self.HEADING_RANGE)
-        elif new_heading < min(self.HEADING_RANGE):
-            new_heading += len(self.HEADING_RANGE)
-
-        return new_heading
+        pass
 
     def random_move_vec(self, sensor_id, reading):
         """Selects a random move from all moves in a direction.
@@ -89,87 +44,37 @@ class DeadEndMouse(AwarenessMixin):
             return poss_move_vecs[idx]
 
     def next_move(self, sensors):
-        # Print mouse's assumed location.
-        if self.verbose:
-            print(f"[MOUSE] Run: {self.run}")
-            print(f"[MOUSE] Step: {self.step}")
-            print(f"[MOUSE] Pos: {self.pos}")
-            print(f"[MOUSE] Heading: {self.heading}")
+        """Selects the move randomly, but avoids walls. He's sick of banging his head.
 
-        # Update the step.
-        self.step += 1
-
-        # Update mouse's state.
-        rot, move = self.make_move(sensors)
-
-        # Check if we're in the goal.
-        if self.in_goal():
-            self.reached_goal = True
-            if self.verbose:
-                print(f"[MOUSE] Reached goal.")
-
-            if self.run == self.EXEC_RUN:
-                self.start_planning()
-                self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
-                if self.verbose: print(f"[MOUSE] Finished.")
-
-        # Increment the step count.
-        if self.step > (self.max_steps - 1):
-            self.start_planning()
-            self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
-            if self.verbose: print('[MOUSE] Exceeded max steps.')
-
-        return rot, move
-
-    def make_move(self, sensors):
-        # Check if we should reset.
-        if self.reached_goal:
-            if self.verbose: print(f"[MOUSE] Finished planning.")
-            self.start_execution()
+        Arguments:
+            sensors -- a tuple of left, front and right sensor readings.
+            reached_goal -- a boolean indicating True if the goal has been reached.
+        Returns:
+            rot -- the next rotation in degrees.
+            move -- an integer for the next move.
+        """
+        # A certain percentage of the time we should try to reset.
+        p = 0.05
+        reset = np.random.choice([0, 1], p=[(1 - p), p])
+        if reset:
             return 'RESET', 'RESET'
 
-        # Get a prob for each direction.
-        sensor_ids = []
-        weights = []
-        move_vecs = np.ndarray((0, 2), dtype=np.int8)
-        for i, reading in enumerate(sensors):
-            if reading == 0: continue
+        # Get indexes where readings are non-zero.
+        non_zero_idx = np.where(np.array(sensors) > 0)[0]
 
-            # Randomly select a move in sensor's direction.
-            move_vec = self.random_move_vec(i, reading) 
-            
-            # Maybe we can't move in this direction because it's a dead end.
-            if move_vec is None: continue
-            move_vecs = np.vstack((move_vecs, move_vec))
-            
-            # Register this index as movable.
-            sensor_ids.append(i)
-
-            # How much of this move is towards the centre?
-            weight = np.dot(move_vec, self.unit_centre())
-            weights.append(weight)
-
-        # If no possible moves, mark dead end and turn around. 
-        if len(move_vecs) == 0:
-            # Mark dead end on map.
+        # If all sensors are blank, turn around.
+        if len(non_zero_idx) == 0:
             self.dead_ends[tuple(self.pos)] = 1
-
-            # Turn around.
             self.update_state([0, 0], -90)
             return -90, 0
-
-        # Apply the softmax function.
-        probs = self.softmax(weights)
         
-        # Get an index based on the probs.
-        sensor_id = np.random.choice(sensor_ids, p=probs)
+        # Choose a rotation randomly from those directions. 
+        idx = random.choice(non_zero_idx)
+        rot = self.INDEX_ROTATION_MAP[idx]
         
-        # Get the rotation and move to perform.
-        rot = self.SENSOR_ROTATION_MAP[sensor_id]
-        move_vec = move_vecs[sensor_ids.index(sensor_id)]
-        move = abs(move_vec).max()
-        
-        # Update internal state.
-        self.update_state(move_vec, rot) 
+        # Choose a random move in the forward direction.
+        max_move = min([sensors[idx], self.MAX_MOVE])
+        move = random.choice(range(1, max_move + 1))
 
         return rot, move
+

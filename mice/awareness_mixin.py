@@ -31,17 +31,6 @@ class AwarenessMixin:
         self.run = self.EXEC_RUN
         self.reset_state()
 
-    def increment(self):
-        """Increments the step count.
-
-        Returns:
-            True if over the step limit, False otherwise.
-        """
-        self.step += 1
-
-        # Check if we've gone over the limit.
-        return True if self.step > (self.max_steps - 1) else False
-
     def in_goal(self):
         """Checks if we're in the centre of the maze.
         """

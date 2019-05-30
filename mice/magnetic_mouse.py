@@ -1,8 +1,9 @@
 import random
 import pdb
 import numpy as np
+from .awareness_mixin import AwarenessMixin
 
-class MagneticMouse: # MagneticMouse?
+class MagneticMouse(AwarenessMixin):
     MAX_MOVE = 3
     HEADING_RANGE = range(360)
 
@@ -21,15 +22,18 @@ class MagneticMouse: # MagneticMouse?
         270: np.array([-1, 0], dtype=np.int8)
     }
 
-    def __init__(self, maze_dim, init_state):
-        self.pos = np.array(init_state['pos'], dtype=np.int8)
-        self.heading = init_state['heading'] 
-        self.centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
+    def __init__(self, maze_dim, init_state, max_steps, verbose):
+        """Sets up the mouse's initial state.
+        """
+        super().init(maze_dim, init_state, max_steps, verbose)
+        self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
+        self.dead_ends = np.zeros((maze_dim, maze_dim))
+        self.verbose = verbose
 
     def unit_centre(self):
         """Finds the unit vector from the mouse to the centre.
         """
-        vec = self.centre - self.pos
+        vec = self.maze_centre - self.pos
         unit_vec = vec / np.linalg.norm(vec)
         return unit_vec
         
@@ -38,7 +42,6 @@ class MagneticMouse: # MagneticMouse?
         """
         # Shift the values so the maximum is zero.
         values -= np.max(values)
-
         return np.exp(values) / np.sum(np.exp(values))
 
     def new_heading(self, heading, rot):
@@ -59,42 +62,101 @@ class MagneticMouse: # MagneticMouse?
             new_heading += len(self.HEADING_RANGE)
 
         return new_heading
+
+    def random_move_vec(self, sensor_id, reading):
+        """Selects a random move from all moves in a direction.
+        """
+        max_move = min([reading, self.MAX_MOVE])
+        move_heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[sensor_id])
+
+        # Some moves may lead to dead-ends.
+        poss_move_vecs = np.ndarray((0, 2), dtype=np.int8)
+        for move in range(1, max_move + 1):
+            move_vec = move * self.HEADING_COMPONENTS_MAP[move_heading]
+            new_pos = self.pos + move_vec 
+
+            # Only consider the move if it doesn't lead to a dead end.
+            try:
+                if self.dead_ends[tuple(new_pos)] == 0:
+                    poss_move_vecs = np.vstack((poss_move_vecs, move_vec))
+            except IndexError:
+                pdb.set_trace()
         
-    def next_move(self, sensors, reached_goal):
-        if reached_goal:
+        if len(poss_move_vecs) == 0:
+            return None
+        else:
+            idx = np.random.choice(len(poss_move_vecs))
+            return poss_move_vecs[idx]
+
+    def next_move(self, sensors):
+        # Print mouse's assumed location.
+        if self.verbose:
+            print(f"[MOUSE] Run: {self.run}")
+            print(f"[MOUSE] Step: {self.step}")
+            print(f"[MOUSE] Pos: {self.pos}")
+            print(f"[MOUSE] Heading: {self.heading}")
+
+        # Update the step.
+        self.step += 1
+
+        # Update mouse's state.
+        rot, move = self.make_move(sensors)
+
+        # Check if we're in the goal.
+        if self.in_goal():
+            self.reached_goal = True
+            if self.verbose:
+                print(f"[MOUSE] Reached goal.")
+
+            if self.run == self.EXEC_RUN:
+                self.start_planning()
+                self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
+                if self.verbose: print(f"[MOUSE] Finished.")
+
+        # Increment the step count.
+        if self.step > (self.max_steps - 1):
+            self.start_planning()
+            self.dead_ends = np.zeros((self.maze_dim, self.maze_dim))
+            if self.verbose: print('[MOUSE] Exceeded max steps.')
+
+        return rot, move
+
+    def make_move(self, sensors):
+        # Check if we should reset.
+        if self.reached_goal:
+            if self.verbose: print(f"[MOUSE] Finished planning.")
+            self.start_execution()
             return 'RESET', 'RESET'
 
-        # Get indexes where readings are non-zero.
-        non_zero_idx = np.where(np.array(sensors) > 0)[0]
-
-        # If all sensors are blank, turn around.
-        if len(non_zero_idx) == 0:
-            self.heading = self.new_heading(self.heading, -90)
-            return -90, 0
-            
         # Get a prob for each direction.
         sensor_ids = []
         weights = []
-        move_vecs = []
+        move_vecs = np.ndarray((0, 2), dtype=np.int8)
         for i, reading in enumerate(sensors):
-            if reading == 0:
-                continue
-                
+            if reading == 0: continue
+
+            # Randomly select a move in sensor's direction.
+            move_vec = self.random_move_vec(i, reading) 
+            
+            # Maybe we can't move in this direction because it's a dead end.
+            if move_vec is None: continue
+            move_vecs = np.vstack((move_vecs, move_vec))
+            
             # Register this index as movable.
             sensor_ids.append(i)
-
-            # Randomly select a move in that direction.
-            max_move = min([reading, self.MAX_MOVE])
-            move = random.choice(range(1, max_move + 1))
-
-            # Get the move vector.
-            move_heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[i])
-            move_vec = move * self.HEADING_COMPONENTS_MAP[move_heading]
-            move_vecs.append(move_vec)
 
             # How much of this move is towards the centre?
             weight = np.dot(move_vec, self.unit_centre())
             weights.append(weight)
+
+        # If no possible moves, mark dead end and turn around. 
+        if len(move_vecs) == 0:
+            # Mark dead end on map.
+            self.dead_ends[tuple(self.pos)] = 1
+
+            # Turn around.
+            self.update_state([0, 0], -90)
+            return -90, 0
 
         # Apply the softmax function.
         probs = self.softmax(weights)
@@ -108,7 +170,6 @@ class MagneticMouse: # MagneticMouse?
         move = abs(move_vec).max()
         
         # Update internal state.
-        self.pos += move_vec
-        self.heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[sensor_id])
+        self.update_state(move_vec, rot) 
 
         return rot, move

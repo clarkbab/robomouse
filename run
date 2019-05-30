@@ -69,6 +69,7 @@ if __name__ == '__main__':
         print(f"No average score.")
     else:
         print(f"Average score: {scores.mean()}")
+        print(f"Standard dev.: {scores.std()}")
 
     sys.exit(0)
 
