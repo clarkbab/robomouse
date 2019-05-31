@@ -41,11 +41,8 @@ class MagneticMouse(StateMixin):
             new_pos = self.pos + move_vec 
 
             # Only consider the move if it doesn't lead to a dead end.
-            try:
-                if self.dead_ends[tuple(new_pos)] == 0:
-                    poss_move_vecs = np.vstack((poss_move_vecs, move_vec))
-            except IndexError:
-                pdb.set_trace()
+            if self.dead_ends[tuple(new_pos)] == 0:
+                poss_move_vecs = np.vstack((poss_move_vecs, move_vec))
         
         if len(poss_move_vecs) == 0:
             return None
