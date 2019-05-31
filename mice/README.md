@@ -28,7 +28,12 @@ reverses instead of turning around.
 
 ### Dead End Mouse
 
-This mouse keeps track of Dead Ends using the [State Mixin](mixins/README.md#state-mixin)
+Keeps track of dead ends and avoids them in future moves. Includes the [State Mixin](mixins/README.md#state-mixin) to track its position and remember dead end locations.
+
+### Magnetic Mouse
+
+Favours moves towards the centre of the maze. Uses the [State Mixin](mixins/README.md#state-mixin) to track position and
+heading and location of centre. Moves with larger vector components in the direction of centre will be favoured.
 
 ## Results
 
