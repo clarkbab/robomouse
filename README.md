@@ -38,10 +38,11 @@ You may find visual feedback handy when debugging, get this by passing the `--di
 
 ### Testing
 
-Learnt models reside in the [/mice](/mice) folder. You can get the score for the mouse by running the following:
+Learnt models reside in the [/mice](/mice) folder. You can get the score for the mouse (for n=1000 iterations of the
+game) by running the following:
 
 ```bash
-$ ./run --maze mazes/maze_01.txt --mouse mice/blind_mouse.py
+$ ./run --maze mazes/maze_01.txt --mouse mice/blind_mouse.py --iterations 1000
 ```
 
 ## Acknowledgements

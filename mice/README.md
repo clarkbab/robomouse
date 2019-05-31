@@ -5,6 +5,8 @@
 - [Blind Mouse](#blind-mouse)
 - [Danger Mouse](#danger-mouse)
 - [Reversing Danger Mouse](#reversing-danger-mouse)
+- [Dead End Mouse](#dead-end-mouse)
+- [Magnetic Mouse](#magnetic-mouse)
 
 ### Performance Summary
 
@@ -40,10 +42,10 @@ heading and measure direction of centre. Moves with larger vector components in 
 The following results are for n=1000 trial runs.
 
 | Mouse                   | Maze  | % Completed   | Mean Score  | Standard Dev.   |
-| ----------------------- | ----- | ------------: | ----------: | -------------:  |
+| ----------------------- | ----- | ------------: | ----------: | --------------: |
 | Blind Mouse             | 1     | 1.2           | 749.24      | 173.00          |
 | Danger Mouse            | 1     | 48.1          | 459.71      | 266.10          |
 | Reversing Danger Mouse  | 1     | 54.5          | 446.90      | 172.97          | 
-| Dead End Mouse          | 1     | 
-| Magnetic Mouse          | 1     | 
+| Dead End Mouse          | 1     | 46.0          | 444.45      | 259.96          |
+| Magnetic Mouse          | 1     | 72.4          | 395.80      | 264.84          |
 

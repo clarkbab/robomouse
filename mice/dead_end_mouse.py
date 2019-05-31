@@ -82,9 +82,6 @@ class DeadEndMouse(StateMixin):
         move_vec = move_vecs[sensor_ids.index(sensor_id)]
         move = abs(move_vec).max()
 
-        print(f"[MOUSE] Pos: {self.pos}")
-        print(f"[MOUSE] Heading: {self.heading}")
-
         # Update internal state.
         self.update_state(rot, move_vec)
         

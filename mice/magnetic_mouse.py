@@ -5,15 +5,6 @@ from mice.mixins import StateMixin
 
 class MagneticMouse(StateMixin):
     MAX_MOVE = 3
-    HEADING_RANGE = range(360)
-
-    # Maps a heading to its axial components.
-    HEADING_COMPONENTS_MAP = {
-        0: np.array([0, 1], dtype=np.int8),
-        90: np.array([1, 0], dtype=np.int8),
-        180: np.array([0, -1], dtype=np.int8),
-        270: np.array([-1, 0], dtype=np.int8)
-    }
 
     def __init__(self, maze_dim, init_state, verbose):
         """Sets up the mouse's initial state.
