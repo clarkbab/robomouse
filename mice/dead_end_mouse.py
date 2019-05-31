@@ -6,14 +6,8 @@ from mice.mixins import StateMixin
 class DeadEndMouse(StateMixin):
     MAX_MOVE = 3
 
-    # Map from reading index to rotation.
-    INDEX_ROTATION_MAP = {
-        0: -90,
-        1: 0,
-        2: 90
-    }
-
     def __init__(self, maze_dim, init_state, verbose):
+        super().init(maze_dim, init_state, verbose)
         self.dead_ends = np.zeros((maze_dim, maze_dim))
         pass
 
@@ -51,11 +45,10 @@ class DeadEndMouse(StateMixin):
         Returns:
             rot -- the next rotation in degrees.
             move -- an integer for the next move.
-        """
-        # A certain percentage of the time we should try to reset.
-        p = 0.05
-        reset = np.random.choice([0, 1], p=[(1 - p), p])
-        if reset:
+        """ 
+        # Reset if the mouse has reached the goal.
+        if self.in_goal():
+            self.start_execution()
             return 'RESET', 'RESET'
 
         # Get a prob for each direction.
@@ -78,6 +71,7 @@ class DeadEndMouse(StateMixin):
         if len(move_vecs) == 0:
             # Mark dead end on map.
             self.dead_ends[tuple(self.pos)] = 1
+            self.update_state(-90, [0, 0])
             return -90, 0
         
         # Get an index based on the probs.
@@ -87,6 +81,12 @@ class DeadEndMouse(StateMixin):
         rot = self.SENSOR_ROTATION_MAP[sensor_id]
         move_vec = move_vecs[sensor_ids.index(sensor_id)]
         move = abs(move_vec).max()
+
+        print(f"[MOUSE] Pos: {self.pos}")
+        print(f"[MOUSE] Heading: {self.heading}")
+
+        # Update internal state.
+        self.update_state(rot, move_vec)
         
         return rot, move
 

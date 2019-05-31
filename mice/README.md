@@ -33,7 +33,7 @@ Keeps track of dead ends and avoids them in future moves. Includes the [State Mi
 ### Magnetic Mouse
 
 Favours moves towards the centre of the maze. Uses the [State Mixin](mixins/README.md#state-mixin) to track position and
-heading and location of centre. Moves with larger vector components in the direction of centre will be favoured.
+heading and measure direction of centre. Moves with larger vector components in the direction of centre will be favoured.
 
 ## Results
 

@@ -7,13 +7,6 @@ class MagneticMouse(StateMixin):
     MAX_MOVE = 3
     HEADING_RANGE = range(360)
 
-    # Map from reading index to rotation.
-    SENSOR_ROTATION_MAP = {
-        0: -90,
-        1: 0,
-        2: 90
-    }
-
     # Maps a heading to its axial components.
     HEADING_COMPONENTS_MAP = {
         0: np.array([0, 1], dtype=np.int8),
@@ -124,7 +117,7 @@ class MagneticMouse(StateMixin):
             self.dead_ends[tuple(self.pos)] = 1
 
             # Turn around.
-            self.update_state([0, 0], -90)
+            self.update_state(-90, [0, 0])
             return -90, 0
 
         # Apply the softmax function.
@@ -139,6 +132,6 @@ class MagneticMouse(StateMixin):
         move = abs(move_vec).max()
         
         # Update internal state.
-        self.update_state(move_vec, rot) 
+        self.update_state(rot, move_vec) 
 
         return rot, move
