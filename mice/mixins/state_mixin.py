@@ -31,12 +31,12 @@ class StateMixin:
 
     def reset_state(self):
         self.reached_goal = False
-        self.pos = np.array(self.init_state['pos'], dtype=np.int8)
         self.heading = self.init_state['heading'] 
+        self.pos = np.array(self.init_state['pos'], dtype=np.int8)
 
     def update_state(self, rot, move_vec):
-        self.pos += move_vec
         self.heading = self.new_heading(self.heading, rot)
+        self.pos += move_vec
 
     def start_execution(self):
         self.run = self.EXEC_RUN
