@@ -145,7 +145,6 @@ class TremauxMouse(StateMixin):
 
         # Keep track of last path in case we need to turn around.
         self.last_path = self.increment_path(old_pos, self.pos)
-        print(f"[MOUSE] Last path: {self.last_path}")
 
         return rot, move
 
