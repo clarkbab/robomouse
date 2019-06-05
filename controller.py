@@ -105,6 +105,9 @@ class Controller:
             self.display.sleep(self.run_display_step, self.delay)
             return
 
+        # Keep old mouse pos to see if we moved at all.
+        old_pos = self.mouse_state['pos'].copy()
+
         # Run the step.
         finished = self.run_step()
 
@@ -115,7 +118,8 @@ class Controller:
 
         # Update the display.
         self.display.set_heading(self.mouse_state['heading'])
-        self.display.move(self.mouse_state['pos'])
+        if not self.mouse_state['pos'] == old_pos:
+            self.display.move(self.mouse_state['pos'])
        
         # Check if finished.
         if not finished:
