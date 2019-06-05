@@ -1,4 +1,5 @@
 import turtle
+import numpy as np
 import pdb
 
 class Display:
@@ -12,6 +13,7 @@ class Display:
         self.maze = maze
         self.square_size = square_size
         self.origin = maze.dim * square_size / -2
+        self.paths = np.zeros((maze.dim ** 2, maze.dim ** 2), dtype=np.int8)
         
         # For some reason turtle crashes when we reboot the screen..
         try:
@@ -134,6 +136,8 @@ class Display:
             pos -- the mouse's position. a list containing x, y integer co-ordinates. 
             heading -- the mouse's heading. an integer in the range (0, 360].
         """
+        # Keep track of pos for path drawing.
+        self.pos = pos
 
         # Set the mouse location.
         x = self.origin + (pos[0] + 0.5) * self.square_size
@@ -156,6 +160,19 @@ class Display:
         # Set the mouse's heading.
         self.mouse_tool.setheading(heading)
 
+    def increment_path(self, from_pos, to_pos):
+        # Convert the positions to indexes.
+        from_idx, to_idx = self.square_index(from_pos), self.square_index(to_pos)
+
+        # Increment the path in both directions.
+        self.paths[from_idx, to_idx] += 1
+        self.paths[to_idx, from_idx] += 1
+
+        return self.paths[from_idx, to_idx]
+
+    def square_index(self, pos):
+        return pos[0] + self.maze.dim * pos[1]
+
     def move(self, pos):
         """Draws a mouse's move.
 
@@ -163,14 +180,38 @@ class Display:
             pos -- the mouse's position. a list containing x, y integer co-ordinates. 
         """
         # Get x, y coordinates.
+        old_pos = self.pos.copy()
         x = self.origin + (pos[0] + 0.5) * self.square_size
         y = self.origin + (pos[1] + 0.5) * self.square_size
+        self.pos = pos
+
+        # Increment the path counter.
+        n = self.increment_path(old_pos, self.pos)
+
+        # Set path colour.
+        colour = 'red'
+        if n == 2:
+            colour = 'orange'
+        elif n == 3:
+            colour = 'yellow'
+        elif n == 4:
+            colour = 'green'
+        elif n == 5:
+            colour = 'blue'
+        elif n == 6:
+            colour = 'indigo'
+        elif n == 7:
+            colour = 'violet'
+        
+        # Draw path.
+        self.mouse_tool.color(colour)
         self.mouse_tool.goto(x, y)
 
     def clear_track(self):
         """Clears the mouse's tracks from the display.
         """
         self.mouse_tool.clear()
+        self.paths = np.zeros((maze.dim ** 2, maze.dim ** 2), dtype=np.int8)
 
     def mainloop(self):
         """Begins the Turtle mainloop.
