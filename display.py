@@ -211,7 +211,7 @@ class Display:
         """Clears the mouse's tracks from the display.
         """
         self.mouse_tool.clear()
-        self.paths = np.zeros((maze.dim ** 2, maze.dim ** 2), dtype=np.int8)
+        self.paths = np.zeros((self.maze.dim ** 2, self.maze.dim ** 2), dtype=np.int8)
 
     def mainloop(self):
         """Begins the Turtle mainloop.
