@@ -7,6 +7,7 @@
 - [Reversing Danger Mouse](#reversing-danger-mouse)
 - [Dead End Mouse](#dead-end-mouse)
 - [Magnetic Mouse](#magnetic-mouse)
+- [Tremaux Mouse](#tremaux-mouse)
 
 ### Performance Summary
 
@@ -36,6 +37,15 @@ Keeps track of dead ends and avoids them in future moves. Includes the [State Mi
 
 Favours moves towards the centre of the maze. Uses the [State Mixin](mixins/README.md#state-mixin) to track position and
 heading and measure direction of centre. Moves with larger vector components in the direction of centre will be favoured.
+
+### Tremaux Mouse
+
+An implementation of depth-first search, this mouse will search down a branch until a leaf is reached and then
+backtrack. For this method to work, the mouse must know how many times it has taken a certain path. A path is defined as
+the passage between two nodes, where a node is an intersection (has an l-shape bend) or a dead-end.
+
+As the mouse progresses through the maze it builds up a graph of the nodes it has visited. When re-tracing a passage it
+can use this knowledge to move to the next node as quickly as possible.
 
 ## Results
 
