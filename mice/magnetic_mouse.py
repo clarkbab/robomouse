@@ -105,7 +105,7 @@ class MagneticMouse(StateMixin):
             self.dead_ends[tuple(self.pos)] = 1
 
             # Turn around.
-            self.update_state(-90, [0, 0])
+            self.update_state(-90, 0)
             return -90, 0
 
         # Apply the softmax function.
@@ -120,6 +120,6 @@ class MagneticMouse(StateMixin):
         move = abs(move_vec).max()
         
         # Update internal state.
-        self.update_state(rot, move_vec) 
+        self.update_state(rot, move)
 
         return rot, move

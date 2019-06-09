@@ -34,9 +34,9 @@ class StateMixin:
         self.heading = self.init_state['heading'] 
         self.pos = np.array(self.init_state['pos'], dtype=np.int8)
 
-    def update_state(self, rot, move_vec):
+    def update_state(self, rot, move):
         self.heading = self.new_heading(self.heading, rot)
-        self.pos += move_vec
+        self.pos += move * self.HEADING_COMPONENTS_MAP[self.heading]
 
     def start_execution(self):
         self.run = self.EXEC_RUN

@@ -68,7 +68,7 @@ class DeadEndMouse(StateMixin):
         if len(move_vecs) == 0:
             # Mark dead end on map.
             self.dead_ends[tuple(self.pos)] = 1
-            self.update_state(-90, [0, 0])
+            self.update_state(-90, 0)
             return -90, 0
         
         # Get an index based on the probs.
@@ -80,7 +80,7 @@ class DeadEndMouse(StateMixin):
         move = abs(move_vec).max()
 
         # Update internal state.
-        self.update_state(rot, move_vec)
+        self.update_state(rot, move) 
         
         return rot, move
 
