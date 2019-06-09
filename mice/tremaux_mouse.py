@@ -47,7 +47,8 @@ class TremauxMouse(StateMixin):
         rot, move = self.plan_move(sensors)
 
         # Update the mouse's internal state.
-        self.update_state(rot, move)
+        if not (rot, move) == ('RESET', 'RESET'):
+            self.update_state(rot, move)
 
         # check if we're in the goal.
         if self.in_goal():
@@ -69,11 +70,27 @@ class TremauxMouse(StateMixin):
 
         return np.array([x, y])
 
-    def find_edge(self, node1, node2):
+    def find_edge_by_nodes(self, node1, node2):
+        """Gets the edge between two nodes.
+        """
         return next((e for e in self.nodes[node1] if e['node'] == node2), None)
 
-    def find_current_edge(self):
-        return next((e for e in self.nodes[self.last_node] if e['heading'] == self.heading), None)
+    def find_edge_from_node(self, node, heading):
+        """Gets an edge radiating out from a node.
+        """
+        return next((e for e in self.nodes[node] if e['heading'] == heading), None)
+
+    def edge_move(self, edge):
+        """Gets the largest move we can make down the known edge.
+        """
+        # Get the destination node.
+        node_pos = self.square_position(edge['node'])
+
+        # How do we travel to get there?
+        diff = node_pos - self.pos
+
+        # Get the largest move we can make in that direction.
+        return int(min(np.linalg.norm(diff), self.MAX_MOVE))
 
     def add_edge(self, node1, node2):
         # Get positions of nodes.
@@ -97,8 +114,8 @@ class TremauxMouse(StateMixin):
 
     def increment_traversal(self, node1, node2):
         # Load the edges.
-        edge1 = self.find_edge(node1, node2)
-        edge2 = self.find_edge(node2, node1)
+        edge1 = self.find_edge_by_nodes(node1, node2)
+        edge2 = self.find_edge_by_nodes(node2, node1)
 
         # Increment the traversals.
         edge1['traversals'] += 1
@@ -169,26 +186,27 @@ class TremauxMouse(StateMixin):
         # Check if we're backtracking.
         if self.backtrack:
             self.backtrack = False
-            return -90, 1
+
+            # Get the direction we're moving in.
+            move_heading = self.new_heading(self.heading, -90)
+
+            # Load up the edge we'll be travelling on.
+            edge = self.find_edge_from_node(square_id, move_heading)
+
+            # What's the largest move we can make down this edge?
+            move = self.edge_move(edge)
+
+            return -90, move
 
         # If it's not a node, just move forward.
         if not self.node_sensed(sensors):
             # Get the edge we're currently on.
-            edge = self.find_current_edge()
+            edge = self.find_edge_from_node(self.last_node, self.heading)
 
-            # If we're on an edge, use the edge information to choose the
-            # largest step towards the next node.
-            if edge:
-                # Get the different between current position and node.
-                node_pos = self.square_position(edge['node'])
-                diff = next_node_pos - self.pos
+            # If we're on an edge, move further if possible.
+            move = self.edge_move(edge) if edge else 1
 
-                # What's the largest move we can make?
-                move = int(min(np.linalg.norm(diff), self.MAX_MOVE))
-                return 0, move
-            
-            # If we're not on an edge, move in single steps.
-            return 0, 1
+            return 0, move
         
         # At this point we've decided that the square is a node.
 
@@ -201,7 +219,7 @@ class TremauxMouse(StateMixin):
         # We're turning around on the spot, don't need to add an edge.
         if square_id != self.last_node:
             # Check if edge already exists.
-            if not self.find_edge(self.last_node, square_id):
+            if not self.find_edge_by_nodes(self.last_node, square_id):
                 # Add the new edge.
                 self.add_edge(self.last_node, square_id)
             else:
@@ -217,19 +235,22 @@ class TremauxMouse(StateMixin):
             # Don't consider the move if we'll hit a wall.
             if reading == 0: continue
 
-            # Get the edge we'd be traversing, if it's marked.
+            # Get the edge we'll be traversing if we take this move.
             sensor_heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[i])
-            edge = self.get_edge(square_id, sensor_heading)
+            edge = self.find_edge_from_node(square_id, sensor_heading)
 
-            # Get number of traversals.
+            # Get number of traversals. 0 if edge isn't recorded.
             traversal = edge['traversals'] if edge else 0
 
             # Don't take the edge if we've been there twice already.
             if traversal == 2:
                 continue
 
+            # If we're on an edge, we can possibly move faster.
+            move = self.edge_move(edge) if edge else 1
+
             # Get the move vector components.
-            move_vec = self.HEADING_COMPONENTS_MAP[sensor_heading]
+            move_vec = move * self.HEADING_COMPONENTS_MAP[sensor_heading]
             
             # Add the number of edge traversals.
             traversals = np.append(traversals, traversal)
@@ -251,7 +272,7 @@ class TremauxMouse(StateMixin):
         if self.last_node != square_id and node_already_added:
             # If we only traversed the last edge once, go back that way. We've
             # reached the end of a branch in our depth-first search algorithm.
-            num_traversals = self.find_edge(self.last_node, square_id)['traversals']
+            num_traversals = self.find_edge_by_nodes(self.last_node, square_id)['traversals']
             if num_traversals == 1:
                 self.last_node = square_id
                 self.backtrack = True
