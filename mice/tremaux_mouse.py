@@ -43,8 +43,11 @@ class TremauxMouse(StateMixin):
             print(f"[MOUSE] pos: {self.pos}")
             print(f"[MOUSE] heading: {self.heading}")
 
-        # Updates mouse's state.
-        rot, move = self.make_move(sensors)
+        # Get the mouse's next move.
+        rot, move = self.plan_move(sensors)
+
+        # Update the mouse's internal state.
+        self.update_state(rot, move)
 
         # check if we're in the goal.
         if self.in_goal():
@@ -68,6 +71,9 @@ class TremauxMouse(StateMixin):
 
     def find_edge(self, node1, node2):
         return next((e for e in self.nodes[node1] if e['node'] == node2), None)
+
+    def find_current_edge(self):
+        return next((e for e in self.nodes[self.last_node] if e['heading'] == self.heading), None)
 
     def add_edge(self, node1, node2):
         # Get positions of nodes.
@@ -130,44 +136,7 @@ class TremauxMouse(StateMixin):
     def get_edge(self, node, heading):
         return next((e for e in self.nodes[node] if e['heading'] == heading), None)
 
-    def is_node(self, readings):
-        """
-        If it has an l-bend or it's a dead-end, it's a node.
-        """
-        # Get all exits.
-        exits = np.nonzero(readings)[0]
-
-        # Check if it's a dead-end.
-        if len(exits) == 1:
-            return True
-
-        # Compare adjacent pairs of readings.
-        for r1, r2 in zip(readings, np.roll(readings, 1)):
-            if r1 != 0 and r2 != 0:
-                return True
-
-        return False
-
-    def initial_node_sensed(self, sensors):
-        """Checks if we're at a node initially.
-
-        In normal operation, we know that we came from a path behind us and we
-        use the existence of this exit to say whether we're at a node.
-        """
-        # Get sensors leading to exits.
-        exits = np.where(sensors != 0)[0]
-
-        # If sensors are all black, we're at a node.
-        if len(exits) == 0:
-            return True
-
-        # Look for an l-bend at this square.
-        if len(exits) > 1 and 1 in exits:
-            return True
-
-        return False
-
-    def make_move(self, sensors):
+    def plan_move(self, sensors):
         # Get the ID of the current square.
         square_id = self.square_id(self.pos)
 
@@ -183,12 +152,10 @@ class TremauxMouse(StateMixin):
 
             # If no exits, rotate.
             if len(exits) == 0:
-                self.update_state(-90, 0)
                 return -90, 0
 
             # Pick the first exit.
             rot = self.SENSOR_ROTATION_MAP[exits[0]]
-            self.update_state(rot, 1)
             return rot, 1
 
         # Check if we should reset.
@@ -202,26 +169,25 @@ class TremauxMouse(StateMixin):
         # Check if we're backtracking.
         if self.backtrack:
             self.backtrack = False
-            self.update_state(-90, 1)
             return -90, 1
 
         # If it's not a node, just move forward.
         if not self.node_sensed(sensors):
-            # Are we on an edge?
-            # Are there any recorded edges that run from the last node in our
-            # current heading?
-            edge = next((e for e in self.nodes[self.last_node] if e['heading'] == self.heading), None)
+            # Get the edge we're currently on.
+            edge = self.find_current_edge()
 
-            # If the edge exists, use this info to take the largest step we can.
+            # If we're on an edge, use the edge information to choose the
+            # largest step towards the next node.
             if edge:
-                # What's the largest step we can take.
-                next_node_pos = self.square_position(edge['node'])
-                max_move_vec = next_node_pos - self.pos
-                move = int(min(np.linalg.norm(max_move_vec), self.MAX_MOVE))
-                self.update_state(0, move)
+                # Get the different between current position and node.
+                node_pos = self.square_position(edge['node'])
+                diff = next_node_pos - self.pos
+
+                # What's the largest move we can make?
+                move = int(min(np.linalg.norm(diff), self.MAX_MOVE))
                 return 0, move
             
-            self.update_state(0, 1)
+            # If we're not on an edge, move in single steps.
             return 0, 1
         
         # At this point we've decided that the square is a node.
@@ -279,7 +245,6 @@ class TremauxMouse(StateMixin):
         # If no possible moves, let's turn around.
         if len(move_vecs) == 0:
             self.last_node = square_id
-            self.update_state(-90, 0)
             return -90, 0
 
         # If we're not turning on the spot, and we've already seen the node.
@@ -290,7 +255,6 @@ class TremauxMouse(StateMixin):
             if num_traversals == 1:
                 self.last_node = square_id
                 self.backtrack = True
-                self.update_state(-90, 0)
                 return -90, 0
 
         # Take the road less travelled, i.e, select those squares that we've visited less.
@@ -314,7 +278,6 @@ class TremauxMouse(StateMixin):
         move = abs(move_vec).max()
         
         # Update internal state.
-        self.update_state(rot, move)
         self.last_node = square_id
         
         # The last thing we do is update our state. We don't know anything about
