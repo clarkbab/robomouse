@@ -210,9 +210,7 @@ class Display:
                 colour = 'green'
             elif n == 5:
                 colour = 'blue'
-            elif n == 6:
-                colour = 'indigo'
-            elif n == 7:
+            elif n > 5:
                 colour = 'violet'
             
             # Draw path.
