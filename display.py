@@ -137,7 +137,7 @@ class Display:
             heading -- the mouse's heading. an integer in the range (0, 360].
         """
         # Keep track of pos for path drawing.
-        self.pos = pos
+        self.pos = np.array(pos, dtype=np.int8)
 
         # Set the mouse location.
         x = self.origin + (pos[0] + 0.5) * self.square_size
@@ -183,29 +183,41 @@ class Display:
         old_pos = self.pos.copy()
         x = self.origin + (pos[0] + 0.5) * self.square_size
         y = self.origin + (pos[1] + 0.5) * self.square_size
-        self.pos = pos
-
-        # Increment the path counter.
-        n = self.increment_path(old_pos, self.pos)
-
-        # Set path colour.
-        colour = 'red'
-        if n == 2:
-            colour = 'orange'
-        elif n == 3:
-            colour = 'yellow'
-        elif n == 4:
-            colour = 'green'
-        elif n == 5:
-            colour = 'blue'
-        elif n == 6:
-            colour = 'indigo'
-        elif n == 7:
-            colour = 'violet'
+        self.pos = np.array(pos, dtype=np.int8)
         
-        # Draw path.
-        self.mouse_tool.color(colour)
-        self.mouse_tool.goto(x, y)
+        # Calculate the heading, and number of steps.
+        diff = self.pos - old_pos
+        n_squares = np.linalg.norm(diff)
+        heading = np.array(diff / n_squares, dtype=np.int8)
+
+        # For each square, draw the colour corresponding to how many times we've
+        # taken that path.
+        for i in range(int(n_squares)):
+            # Get old and new pos for each step.
+            start_pos = old_pos + i * heading
+            end_pos = old_pos + (i + 1) * heading
+
+            # Increment the path counter.
+            n = self.increment_path(start_pos, end_pos)
+
+            # Set path colour.
+            colour = 'red'
+            if n == 2:
+                colour = 'orange'
+            elif n == 3:
+                colour = 'yellow'
+            elif n == 4:
+                colour = 'green'
+            elif n == 5:
+                colour = 'blue'
+            elif n == 6:
+                colour = 'indigo'
+            elif n == 7:
+                colour = 'violet'
+            
+            # Draw path.
+            self.mouse_tool.color(colour)
+            self.mouse_tool.goto(x, y)
 
     def clear_track(self):
         """Clears the mouse's tracks from the display.
