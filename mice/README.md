@@ -54,9 +54,25 @@ The following results are for n=1000 trial runs.
 | Mouse                   | Maze  | % Completed   | Mean Score  | Standard Dev.   |
 | ----------------------- | ----- | ------------: | ----------: | --------------: |
 | Blind Mouse             | 1     | 1.2           | 749.24      | 173.00          |
+| "                       | 2     | 1.2           | 749.24      | 173.00          |
+| "                       | 3     | 1.2           | 749.24      | 173.00          |
 | Danger Mouse            | 1     | 48.1          | 459.71      | 266.10          |
+| "                       | 2     | 48.1          | 459.71      | 266.10          |
+| "                       | 3     | 48.1          | 459.71      | 266.10          |
 | Reversing Danger Mouse  | 1     | 54.5          | 446.90      | 172.97          | 
+| "                       | 2     | 54.5          | 446.90      | 172.97          | 
+| "                       | 3     | 54.5          | 446.90      | 172.97          | 
 | Dead End Mouse          | 1     | 46.0          | 444.45      | 259.96          |
+| "                       | 2     | 46.0          | 444.45      | 259.96          |
+| "                       | 3     | 46.0          | 444.45      | 259.96          |
 | Magnetic Mouse          | 1     | 72.4          | 395.80      | 264.84          |
+| "                       | 2     | 78.9          | 408.22      | 231.51          |
+| "                       | 3     | 85.9          | 177.53      | 111.95          |
 | Tremaux Mouse           | 1     | 100.0         | 141.36      | 63.87           |
+| "                       | 2     | 100.0         | 189.83      | 98.24           |
+| "                       | 3     | 100.0         | 198.49      | 131.59          | 
+| Perfect Mouse*          | 1     | -             | 18.60       | -               |
+| "                       | 2     | -             | 24.80       | -               |
+| "                       | 3     | -             | 26.87       | -               |
 
+* Perfect mouse is omniscient. This mouse makes the largest possible moves towards the goal with no planning required. No mouse should be able to beat this score on average.
