@@ -58,4 +58,5 @@ The following results are for n=1000 trial runs.
 | Reversing Danger Mouse  | 1     | 54.5          | 446.90      | 172.97          | 
 | Dead End Mouse          | 1     | 46.0          | 444.45      | 259.96          |
 | Magnetic Mouse          | 1     | 72.4          | 395.80      | 264.84          |
+| Tremaux Mouse           | 1     | 100.0         | 141.36      | 63.87           |
 
