@@ -8,6 +8,7 @@
 - [Dead End Mouse](#dead-end-mouse)
 - [Magnetic Mouse](#magnetic-mouse)
 - [Tremaux Mouse](#tremaux-mouse)
+- [A-Star Mouse](#a-start-mouse)
 
 ### Performance Summary
 
@@ -47,6 +48,12 @@ the passage between two nodes, where a node is an intersection (has an l-shape b
 As the mouse progresses through the maze it builds up a graph of the nodes it has visited. When re-tracing a passage it
 can use this knowledge to move to the next node as quickly as possible.
 
+### A-Star Mouse
+
+Uses the Tremaux algorithm to explore the maze, noting the nodes passed on the way. Once the planning run is finished,
+the mouse finds the shortest path from start to finish using the A-Star algorithm. It then completes the maze using this
+path.
+
 ## Results
 
 The following results are for n=1000 trial runs.
@@ -71,6 +78,9 @@ The following results are for n=1000 trial runs.
 | Tremaux Mouse           | 1     | 100.0         | 141.36      | 63.87           |
 | "                       | 2     | 100.0         | 189.83      | 98.24           |
 | "                       | 3     | 100.0         | 198.49      | 131.59          | 
+| A-Star Mouse            | 1     | 100.0         | 29.61       | 4.36            |
+| "                       | 2     | 100.0         | 41.10       | 4.18            | 
+| "                       | 3     | 100.0         | 43.91       | 5.01            | 
 | Perfect Mouse*          | 1     | -             | 18.60       | -               |
 | "                       | 2     | -             | 24.80       | -               |
 | "                       | 3     | -             | 26.87       | -               |
