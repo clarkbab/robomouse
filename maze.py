@@ -1,3 +1,4 @@
+import pdb
 import numpy as np
 from heading import Heading
 from rotation import Rotation
@@ -204,7 +205,7 @@ class Maze(object):
             True if position exists, False otherwise.
         """
         # Check that position is integer.
-        if not isinstance(pos[0], int) or not isinstance(pos[1], int):
+        if not isinstance(pos[0], np.int8) or not isinstance(pos[1], np.int8):
             return False
 
         # Check against maze dimensions.

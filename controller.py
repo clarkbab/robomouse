@@ -4,6 +4,7 @@ import numpy as np
 import copy
 from heading import Heading
 from rotation import Rotation
+from state import State
 
 class Controller:
     MAX_STEPS = 3 
@@ -22,10 +23,13 @@ class Controller:
             pause -- should we pause before runs.
             verbose -- prints info to the command line.
         """
-        # Validate the initial state.
-        self.validate_state(*init_state.values(), maze)
+        # Create mouse's state.
+        self.mouse_state = State(init_state['pos'], init_state['heading'])
 
-        # Keep record of mouse's original state. This prevents the mouse from persisting state between runs.
+        # Validate the initial state.
+        self.validate_state(self.mouse_state.pos, self.mouse_state.heading, maze)
+
+        # Keep record of mouse object. This prevents the mouse from persisting state between runs.
         self.initial_mouse = mouse
 
         self.maze = maze
@@ -50,7 +54,7 @@ class Controller:
         # Set up the display.
         self.display = display
         self.display.draw_maze()
-        self.display.place_mouse(*self.mouse_state.values())
+        self.display.place_mouse(self.mouse_state.pos, self.mouse_state.heading)
 
         # Set up space bar pause.
         self.display.on_space(self.toggle_pause)
@@ -87,7 +91,7 @@ class Controller:
         self.steps[self.PLAN_RUN] = -1
         
         # Reset the mouse's state.
-        self.mouse_state = copy.deepcopy(self.init_state)
+        self.mouse_state.reset()
 
         # Reset the success flags.
         self.reached_goal = False
@@ -105,7 +109,7 @@ class Controller:
             return
 
         # Keep old mouse pos to see if we moved at all.
-        old_pos = self.mouse_state['pos'].copy()
+        old_pos = self.mouse_state.pos.copy()
 
         # Run the step.
         finished = self.run_step()
@@ -116,9 +120,9 @@ class Controller:
             return
 
         # Update the display.
-        self.display.set_heading(self.mouse_state['heading'])
-        if not self.mouse_state['pos'] == old_pos:
-            self.display.move(self.mouse_state['pos'])
+        self.display.set_heading(self.mouse_state.heading)
+        if not np.array_equal(self.mouse_state.pos, old_pos):
+            self.display.move(self.mouse_state.pos)
        
         # Check if finished.
         if not finished:
@@ -131,7 +135,7 @@ class Controller:
 
             # Reset display.
             self.display.clear_track()
-            self.display.place_mouse(*self.mouse_state.values())
+            self.display.place_mouse(self.mouse_state.pos, self.mouse_state.heading)
             
             # Start the next run.
             self.display.sleep(self.run_display_step, self.delay)
@@ -153,7 +157,7 @@ class Controller:
         self.steps[self.EXEC_RUN] = -1
 
         # Reset the mouse state and position.
-        self.mouse_state = copy.deepcopy(self.init_state)
+        self.mouse_state.reset()
 
         # Reset success flag.
         self.reached_goal = False
@@ -201,22 +205,18 @@ class Controller:
         self.steps[self.run] += 1
 
         # Get sensor readings.
-        readings = self.maze.sensor_readings(*self.mouse_state.values())
+        readings = self.maze.sensor_readings(self.mouse_state.pos, self.mouse_state.heading)
 
         if self.verbose:
             print('-----')
             print(f"Run: {self.run}")
             print(f"Step: {self.steps[self.run]:.0f}")
-            print(f"Pos: {self.mouse_state['pos']}")
-            print(f"Heading: {self.mouse_state['heading'].value}")
+            print(f"Pos: {self.mouse_state.pos}")
+            print(f"Heading: {self.mouse_state.heading.value}")
             print(f"Sensors: {readings}")
 
         # Get mouse's desired move.
         rot, move = self.mouse.next_move(readings)
-        
-        if self.verbose:
-            print(f"Rot: {rot}")
-            print(f"Move: {move}")
         
         # Check if mouse has finished planning.
         if self.run == self.PLAN_RUN and (rot, move) == ('RESET', 'RESET'):
@@ -228,25 +228,27 @@ class Controller:
                 if self.verbose: print("Mouse hasn't reached goal, can't reset.")
                 return False
 
+        if self.verbose:
+            print(f"Rot: {rot.value}")
+            print(f"Move: {move}")
+
         # Validate the mouse's response.
         if not self.valid_rotation(rot) or not self.valid_move(move):
             return False
 
-        # Update the mouse's heading.
-        self.mouse_state['heading'] = Heading.rotate(self.mouse_state['heading'], rot)
-
         # Is the move valid given the structure of the maze?
-        if not self.maze.valid_move(*self.mouse_state.values(), move):
+        new_heading = Heading.rotate(self.mouse_state.heading, rot)
+        if not self.maze.valid_move(self.mouse_state.pos, new_heading, move):
             if self.verbose:
-                print(f"Moving {move} squares in heading {self.mouse_state['heading'].value} from {self.mouse_state['pos']} is invalid.")
+                print(f"Moving {move} squares in heading {new_heading.value} from {self.mouse_state.pos} is invalid.")
             return False
 
-        # Update the mouse's position.
-        self.mouse_state['pos'] = self.maze.new_pos(*self.mouse_state.values(), move)
+        # Update the mouse's state.
+        self.mouse_state.update(rot, move)
 
         # Check if mouse has reached goal.
-        if (not self.reached_goal) and self.maze.reached_goal(self.mouse_state['pos']):
-            if self.verbose: print(f"Reached goal {self.mouse_state['pos']}.")
+        if (not self.reached_goal) and self.maze.reached_goal(self.mouse_state.pos):
+            if self.verbose: print(f"Reached goal {self.mouse_state.pos}.")
             self.reached_goal = True
 
             # Check if mouse has completed the final run.
