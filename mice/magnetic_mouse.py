@@ -2,6 +2,9 @@ import random
 import pdb
 import numpy as np
 from mice.mixins import StateMixin
+from heading import Heading
+from rotation import Rotation
+from sensor import Sensor
 
 class MagneticMouse(StateMixin):
     MAX_MOVE = 3
@@ -28,16 +31,17 @@ class MagneticMouse(StateMixin):
         values -= np.max(values)
         return np.exp(values) / np.sum(np.exp(values))
 
-    def random_move_vec(self, sensor_id, reading):
+    def random_move_vec(self, sensor, reading):
         """Selects a random move from all moves in a direction.
         """
         max_move = min([reading, self.MAX_MOVE])
-        move_heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[sensor_id])
+        rot = Sensor.rotation(sensor)
+        move_heading = Heading.rotate(self.heading, rot)
 
         # Some moves may lead to dead-ends.
         poss_move_vecs = np.ndarray((0, 2), dtype=np.int8)
         for move in range(1, max_move + 1):
-            move_vec = move * self.HEADING_COMPONENTS_MAP[move_heading]
+            move_vec = move * Heading.components(move_heading)
             new_pos = self.pos + move_vec 
 
             # Only consider the move if it doesn't lead to a dead end.
@@ -50,15 +54,19 @@ class MagneticMouse(StateMixin):
             idx = np.random.choice(len(poss_move_vecs))
             return poss_move_vecs[idx]
 
-    def next_move(self, sensors):
+    def next_move(self, readings):
         # Print mouse's assumed location.
         if self.verbose:
             print(f"[MOUSE] Run: {self.run}")
             print(f"[MOUSE] Pos: {self.pos}")
-            print(f"[MOUSE] Heading: {self.heading}")
+            print(f"[MOUSE] Heading: {self.heading.value}")
 
         # Update mouse's state.
-        rot, move = self.make_move(sensors)
+        rot, move = self.make_move(readings)
+
+        # Update the mouse's internal state.
+        if not (rot, move) == ('RESET', 'RESET'):
+            self.update_state(rot, move)
 
         # Check if we're in the goal.
         if self.in_goal():
@@ -71,7 +79,7 @@ class MagneticMouse(StateMixin):
 
         return rot, move
 
-    def make_move(self, sensors):
+    def make_move(self, readings):
         # Check if we should reset.
         if self.reached_goal:
             if self.verbose: print(f"[MOUSE] Finished planning.")
@@ -79,25 +87,28 @@ class MagneticMouse(StateMixin):
             return 'RESET', 'RESET'
 
         # Get a prob for each direction.
-        sensor_ids = []
-        weights = []
+        sensors = np.array([])
+        weights = np.array([])
         move_vecs = np.ndarray((0, 2), dtype=np.int8)
-        for i, reading in enumerate(sensors):
+        for i, reading in enumerate(readings):
             if reading == 0: continue
 
+            # Create the sensor.
+            sensor = Sensor(i)
+
             # Randomly select a move in sensor's direction.
-            move_vec = self.random_move_vec(i, reading) 
+            move_vec = self.random_move_vec(sensor, reading) 
             
             # Maybe we can't move in this direction because it's a dead end.
             if move_vec is None: continue
             move_vecs = np.vstack((move_vecs, move_vec))
             
             # Register this index as movable.
-            sensor_ids.append(i)
+            sensors = np.append(sensors, sensor)
 
             # How much of this move is towards the centre?
             weight = np.dot(move_vec, self.unit_centre())
-            weights.append(weight)
+            weights = np.append(weights, weight)
 
         # If no possible moves, mark dead end and turn around. 
         if len(move_vecs) == 0:
@@ -105,21 +116,19 @@ class MagneticMouse(StateMixin):
             self.dead_ends[tuple(self.pos)] = 1
 
             # Turn around.
-            self.update_state(-90, 0)
-            return -90, 0
+            return Rotation.LEFT, 0
 
         # Apply the softmax function.
         probs = self.softmax(weights)
         
         # Get an index based on the probs.
-        sensor_id = np.random.choice(sensor_ids, p=probs)
+        sensor = np.random.choice(sensors, p=probs)
         
         # Get the rotation and move to perform.
-        rot = self.SENSOR_ROTATION_MAP[sensor_id]
-        move_vec = move_vecs[sensor_ids.index(sensor_id)]
+        rot = Sensor.rotation(sensor)
+        idx = np.where(sensors == sensor)[0][0]
+        move_vec = move_vecs[idx]
         move = abs(move_vec).max()
-        
-        # Update internal state.
-        self.update_state(rot, move)
 
         return rot, move
+

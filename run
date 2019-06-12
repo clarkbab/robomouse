@@ -9,6 +9,7 @@ from optparse import OptionParser
 from maze import Maze
 from display import Display
 from controller import Controller
+from heading import Heading
 
 if __name__ == '__main__':
     # Parse options.
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     # Create and place the mouse.
     mouse_class = getattr(mice, opts.mouse)
     pos = [0, 0]
-    heading = Maze.NORTH
+    heading = Heading.NORTH
     init_state = { 'pos': pos, 'heading': heading }
     mouse = mouse_class(maze.dim, init_state, opts.verbose)
 

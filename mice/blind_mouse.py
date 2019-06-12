@@ -1,5 +1,6 @@
 import pdb
 import numpy as np
+from rotation import Rotation
 
 class BlindMouse():
     def __init__(self, maze_dim, init_state, verbose):
@@ -21,8 +22,7 @@ class BlindMouse():
             return 'RESET', 'RESET'
         
         # Get random rotation. Assign a lower prob to reset.
-        rot_opts = [-90, 0, 90]
-        rot = np.random.choice(rot_opts)
+        rot = np.random.choice(Rotation)
 
         # Get random move.
         move_opts = range(-3, 4)

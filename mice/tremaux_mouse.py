@@ -1,6 +1,9 @@
 import pdb
 import numpy as np
 from mice.mixins import StateMixin
+from heading import Heading
+from rotation import Rotation
+from sensor import Sensor
 
 class TremauxMouse(StateMixin):
     MAX_MOVE = 3
@@ -36,15 +39,15 @@ class TremauxMouse(StateMixin):
         """
         return pos[0] + self.maze_dim * pos[1]
 
-    def next_move(self, sensors):
+    def next_move(self, readings):
         # Print mouse's assumed location.
         if self.verbose:
             print(f"[MOUSE] run: {self.run}")
             print(f"[MOUSE] pos: {self.pos}")
-            print(f"[MOUSE] heading: {self.heading}")
+            print(f"[MOUSE] heading: {self.heading.value}")
 
         # Get the mouse's next move.
-        rot, move = self.plan_move(sensors)
+        rot, move = self.plan_move(readings)
 
         # Update the mouse's internal state.
         if not (rot, move) == ('RESET', 'RESET'):
@@ -103,8 +106,8 @@ class TremauxMouse(StateMixin):
 
         # Get headings traversing from node 1 to 2, and reverse.
         head_vect = vec / dist 
-        heading1 = next(k for k, v in self.HEADING_COMPONENTS_MAP.items() if np.array_equal(head_vect, v))
-        heading2 = self.new_heading(heading1, 180)
+        heading1 = Heading.from_components(head_vect)
+        heading2 = Heading.opposite(heading1)
 
         # Add connections.
         edge1 = { 'node': node2, 'length': dist, 'heading': heading1, 'traversals': 1 }
@@ -124,24 +127,24 @@ class TremauxMouse(StateMixin):
     def node_added(self, node):
         return node in self.nodes
 
-    def node_sensed(self, sensors):
+    def node_sensed(self, readings):
         """
         Looks like a node if the left or right sensor-readings are non-zero, or
         we're at a dead-end and all readings are zero.
 
         Makes assumptions that there is an exit behind us.
         """
-        # Get sensors leading to exits.
-        exits = np.nonzero(sensors)[0]
+        # Get exits from non-zero sensor readings.
+        exits = np.nonzero(readings)[0]
 
-        # If sensor readings are all blank, we're at a node.
+        # If there are no exits, we're at a dead-end, which is a node.
         if len(exits) == 0:
             return True
 
         # If left or right passages are exits, we're at a node. This is because,
         # assuming there is a passage behind us, there is an l-bend at this
         # square.
-        if 0 in exits or 2 in exits:
+        if Sensor.LEFT.value in exits or Sensor.RIGHT.value in exits:
             return True
 
         return False
@@ -153,7 +156,7 @@ class TremauxMouse(StateMixin):
     def get_edge(self, node, heading):
         return next((e for e in self.nodes[node] if e['heading'] == heading), None)
 
-    def plan_move(self, sensors):
+    def plan_move(self, readings):
         # Get the ID of the current square.
         square_id = self.square_id(self.pos)
 
@@ -165,14 +168,15 @@ class TremauxMouse(StateMixin):
             self.last_node = square_id
 
             # Get all the exits.
-            exits = np.nonzero(sensors)[0]
+            exits = np.nonzero(readings)[0]
 
             # If no exits, rotate.
             if len(exits) == 0:
                 return -90, 0
 
             # Pick the first exit.
-            rot = self.SENSOR_ROTATION_MAP[exits[0]]
+            sensor = Sensor(exits[0])
+            rot = Sensor.rotation(sensor)
             return rot, 1
 
         # Check if we should reset.
@@ -188,7 +192,7 @@ class TremauxMouse(StateMixin):
             self.backtrack = False
 
             # Get the direction we're moving in.
-            move_heading = self.new_heading(self.heading, -90)
+            move_heading = Heading.rotate(self.heading, Rotation.LEFT)
 
             # Load up the edge we'll be travelling on.
             edge = self.find_edge_from_node(square_id, move_heading)
@@ -196,17 +200,17 @@ class TremauxMouse(StateMixin):
             # What's the largest move we can make down this edge?
             move = self.edge_move(edge)
 
-            return -90, move
+            return Rotation.LEFT, move
 
         # If it's not a node, just move forward.
-        if not self.node_sensed(sensors):
+        if not self.node_sensed(readings):
             # Get the edge we're currently on.
             edge = self.find_edge_from_node(self.last_node, self.heading)
 
             # If we're on an edge, move further if possible.
             move = self.edge_move(edge) if edge else 1
 
-            return 0, move
+            return Rotation.NONE, move
         
         # At this point we've decided that the square is a node.
 
@@ -227,16 +231,19 @@ class TremauxMouse(StateMixin):
                 self.increment_traversal(self.last_node, square_id)
 
         # Get a prob for each direction.
-        sensor_ids = np.array([], dtype=np.int8)
+        sensors = np.array([])
         weights = np.array([], dtype=np.float32)
         traversals = np.array([], dtype=np.int8)
         move_vecs = np.ndarray((0, 2), dtype=np.int8)
-        for i, reading in enumerate(sensors):
+        for i, reading in enumerate(readings):
             # Don't consider the move if we'll hit a wall.
             if reading == 0: continue
 
+            # Create the Sensor.
+            sensor = Sensor(i)
+
             # Get the edge we'll be traversing if we take this move.
-            sensor_heading = self.new_heading(self.heading, self.SENSOR_ROTATION_MAP[i])
+            sensor_heading = Heading.rotate(self.heading, Sensor.rotation(sensor))
             edge = self.find_edge_from_node(square_id, sensor_heading)
 
             # Get number of traversals. 0 if edge isn't recorded.
@@ -250,14 +257,14 @@ class TremauxMouse(StateMixin):
             move = self.edge_move(edge) if edge else 1
 
             # Get the move vector components.
-            move_vec = move * self.HEADING_COMPONENTS_MAP[sensor_heading]
+            move_vec = move * Heading.components(sensor_heading)
             
             # Add the number of edge traversals.
             traversals = np.append(traversals, traversal)
 
             # Add the move vec and sensor ID.
             move_vecs = np.vstack((move_vecs, move_vec))
-            sensor_ids = np.append(sensor_ids, i)
+            sensors = np.append(sensors, sensor)
 
             # How much of this move is towards the centre?
             weight = np.dot(move_vec, self.unit_centre())
@@ -266,7 +273,7 @@ class TremauxMouse(StateMixin):
         # If no possible moves, let's turn around.
         if len(move_vecs) == 0:
             self.last_node = square_id
-            return -90, 0
+            return Rotation.LEFT, 0
 
         # If we're not turning on the spot, and we've already seen the node.
         if self.last_node != square_id and node_already_added:
@@ -276,13 +283,13 @@ class TremauxMouse(StateMixin):
             if num_traversals == 1:
                 self.last_node = square_id
                 self.backtrack = True
-                return -90, 0
+                return Rotation.LEFT, 0
 
         # Take the road less travelled, i.e, select those squares that we've visited less.
         min_idx = np.argwhere(traversals == np.min(traversals)).flatten()
 
         # Only keep edges with minimum traversals.
-        sensor_ids = sensor_ids[min_idx]
+        sensors = sensors[min_idx]
         weights = weights[min_idx]
         move_vecs = move_vecs[min_idx]
 
@@ -290,11 +297,11 @@ class TremauxMouse(StateMixin):
         probs = self.softmax(weights)
         
         # Get a sensor based on the probs.
-        sensor_id = np.random.choice(sensor_ids, p=probs)
-        idx = np.where(sensor_ids == sensor_id)[0][0]
+        sensor = np.random.choice(sensors, p=probs)
+        idx = np.where(sensors == sensor)[0][0]
 
         # Get the rotation and move to perform.
-        rot = self.SENSOR_ROTATION_MAP[sensor_id]
+        rot = Sensor.rotation(sensor)
         move_vec = move_vecs[idx]
         move = abs(move_vec).max()
         

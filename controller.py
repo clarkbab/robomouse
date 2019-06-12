@@ -2,12 +2,11 @@ import time
 import pdb
 import numpy as np
 import copy
+from heading import Heading
+from rotation import Rotation
 
 class Controller:
-    HEADING_RANGE = (0, 360)
-    VALID_HEADINGS = (0, 90, 180, 270)
-    VALID_ROTATIONS = (0, 90, -90)
-    MAX_STEPS_PER_MOVE = 3 
+    MAX_STEPS = 3 
     PLAN_RUN = 0
     EXEC_RUN = 1
 
@@ -209,7 +208,7 @@ class Controller:
             print(f"Run: {self.run}")
             print(f"Step: {self.steps[self.run]:.0f}")
             print(f"Pos: {self.mouse_state['pos']}")
-            print(f"Heading: {self.mouse_state['heading']}")
+            print(f"Heading: {self.mouse_state['heading'].value}")
             print(f"Sensors: {readings}")
 
         # Get mouse's desired move.
@@ -234,12 +233,12 @@ class Controller:
             return False
 
         # Update the mouse's heading.
-        self.mouse_state['heading'] = self.maze.new_heading(self.mouse_state['heading'], rot)
+        self.mouse_state['heading'] = Heading.rotate(self.mouse_state['heading'], rot)
 
         # Is the move valid given the structure of the maze?
         if not self.maze.valid_move(*self.mouse_state.values(), move):
             if self.verbose:
-                print(f"Moving {move} squares in heading {self.mouse_state['heading']} from {self.mouse_state['pos']} is invalid.")
+                print(f"Moving {move} squares in heading {self.mouse_state['heading'].value} from {self.mouse_state['pos']} is invalid.")
             return False
 
         # Update the mouse's position.
@@ -284,7 +283,7 @@ class Controller:
 
         Arguments:
             pos -- a list containing the [x, y] co-ordinates of the mouse.
-            heading -- a number in degrees, must be a value from VALID_HEADINGS.
+            heading -- a Heading, e.g. Heading.NORTH.
             maze -- the maze to validate against.
         """
         # Check the position exists in the maze.
@@ -292,20 +291,20 @@ class Controller:
             raise Exception(f"Pos {pos} doesn't exist in maze.")
 
         # Check the heading is valid.
-        if not heading in self.VALID_HEADINGS:
-            raise Exception(f"Heading {heading} isn't valid, choose from {self.VALID_HEADINGS}.")
+        if not heading in Heading:
+            raise Exception(f"Heading {heading} isn't valid, must be a Heading.")
 
     def valid_rotation(self, rot):
         """Checks if the rotation from the mouse is valid.
 
         Arguments:
-            rot -- the rotation in degrees.
+            rot -- a Rotation, e.g. Rotation.LEFT.
         Returns:
             True if valid, False otherwise.
         """
         # Is this a valid rotation?
-        if not rot in self.VALID_ROTATIONS:
-            if self.verbose: print(f"Invalid rot {rot}, choose from {self.VALID_ROTATIONS}.") 
+        if not rot in Rotation:
+            if self.verbose: print(f"Invalid rot {rot}, must be a Rotation.") 
             return False 
 
         return True
@@ -324,10 +323,9 @@ class Controller:
             return False
 
         # Check it's in the correct range.
-        if not move in range(-self.MAX_STEPS_PER_MOVE, self.MAX_STEPS_PER_MOVE + 1):
-            print(f"Move should be in range ({-self.MAX_STEPS_PER_MOVE},{self.MAX_STEPS_PER_MOVE}), got {move}.")
+        if not move in range(-self.MAX_STEPS, self.MAX_STEPS + 1):
+            print(f"Move should be in range ({-self.MAX_STEPS},{self.MAX_STEPS}), got {move}.")
             return False
-            
             
         return True
 

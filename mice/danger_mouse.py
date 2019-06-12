@@ -1,15 +1,16 @@
 import random
 import pdb
 import numpy as np
+from rotation import Rotation
+from sensor import Sensor
 
 class DangerMouse:
     MAX_MOVE = 3
 
-    # Map from reading index to rotation.
-    INDEX_ROTATION_MAP = {
-        0: -90,
-        1: 0,
-        2: 90
+    # Map from sensor to steering.
+    SENSOR_STEERING_MAP = {
+        0: Rotation.LEFT,
+        1: Rotation.NONE, 2: Rotation.RIGHT 
     }
 
     def __init__(self, maze_dim, init_state, verbose):
@@ -36,11 +37,11 @@ class DangerMouse:
 
         # If all sensors are blank, turn around.
         if len(non_zero_idx) == 0:
-            return -90, 0
+            return Rotation.LEFT, 0
         
         # Choose a rotation randomly from those directions. 
         idx = random.choice(non_zero_idx)
-        rot = self.INDEX_ROTATION_MAP[idx]
+        rot = Sensor.rotation(Sensor(idx))
         
         # Choose a random move in the forward direction.
         max_move = min([sensors[idx], self.MAX_MOVE])

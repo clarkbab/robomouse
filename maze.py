@@ -1,29 +1,22 @@
 import numpy as np
+from heading import Heading
+from rotation import Rotation
 
 class Maze(object):
-    # Define the directions.
-    NORTH = 0
-    EAST = 90
-    SOUTH = 180
-    WEST = 270
-
-    # Acceptable heading range.
-    HEADING_RANGE = range(360)
-    
     # Maps headings to the axial components.
     HEADING_COMPONENTS_MAP = {
-        NORTH: np.array([0, 1]),
-        EAST: np.array([1, 0]),
-        SOUTH: np.array([0, -1]),
-        WEST: np.array([-1, 0])
+        Heading.NORTH: np.array([0, 1]),
+        Heading.EAST: np.array([1, 0]),
+        Heading.SOUTH: np.array([0, -1]),
+        Heading.WEST: np.array([-1, 0])
     }
 
     # Maps heading to wall decimal.
     HEADING_DECIMAL_MAP = {
-        NORTH: 1,
-        EAST: 2,
-        SOUTH: 4,
-        WEST: 8
+        Heading.NORTH: 1,
+        Heading.EAST: 2,
+        Heading.SOUTH: 4,
+        Heading.WEST: 8
     }
 
     def __init__(self, filename):
@@ -91,7 +84,7 @@ class Maze(object):
 
         Arguments:
             pos -- the current position.
-            heading -- the heading to move in.
+            heading -- a Heading value, e.g. Heading.NORTH.
         Returns:
             True if we can move, False otherwise.
         """
@@ -103,7 +96,7 @@ class Maze(object):
 
         Arguments:
             pos -- the current position.
-            heading -- the current heading.
+            heading -- a Heading value, e.g. Heading.NORTH.
         Return:
             an integer distance. The number of moves that can be made in that direction.
         """
@@ -123,7 +116,7 @@ class Maze(object):
 
         Arguments:
             pos -- the current position.
-            heading -- the current heading.
+            heading -- a Heading value, e.g. Heading.NORTH.
             move -- the desired move.
         Returns:
             A list of [x, y] int components, showing the new position.
@@ -135,38 +128,19 @@ class Maze(object):
         x_new, y_new = pos[0] + dx, pos[1] + dy
 
         return [int(x_new), int(y_new)]
-
-    def new_heading(self, heading, rot):
-        """Calculates the new heading.
-
-        Arguments:
-            heading -- the heading in degrees.
-            rot -- the rotation in degrees.
-        Returns:
-            the new heading wrapped to the range (0, 360].
-        """
-        new_heading = heading + rot
-
-        # Account for values outside of the accepted range.
-        if new_heading >= len(self.HEADING_RANGE):
-            new_heading -= len(self.HEADING_RANGE)
-        elif new_heading < min(self.HEADING_RANGE):
-            new_heading += len(self.HEADING_RANGE)
-
-        return new_heading
         
     def sensor_readings(self, pos, heading):
         """Calculate the mouse's sensor readings.
 
         Arguments:
             pos -- the mouse's current position.
-            heading -- the mouse's heading.
+            heading -- a Heading value, e.g. Heading.NORTH.
         Returns:
             A tuple of sensor readings, each giving the distance to the wall in the (left, middle, right) directions.
         """
         # Get left and right headings.
-        l_head = self.new_heading(heading, -90)
-        r_head = self.new_heading(heading, 90)
+        l_head = Heading.rotate(heading, Rotation.LEFT)
+        r_head = Heading.rotate(heading, Rotation.RIGHT)
 
         # Get distances for each heading.
         dist = self.dist_to_wall(pos, heading)
@@ -197,8 +171,7 @@ class Maze(object):
 
         Arguments:
             pos -- the [x, y] co-ordinates of the mouse.
-            heading -- the heading of the movement. This isn't necessarily the  heading of the mouse, it could be
-                reversing.
+            heading -- a Heading, e.g. Heading.NORTH.
             size -- the size of the move. Positive or negative.
         Returns:
             True if valid move, False otherwise.
@@ -207,13 +180,11 @@ class Maze(object):
         if not self.pos_exists(pos):
             return False
             
-        # Get the move direction. Positive or negative. 
+        # Get the move heading.
         move_heading = heading
         dir = (-1, 1)[size > 0]
         if dir == -1:
-            move_heading += 180
-            if move_heading >= 360:
-                move_heading -= 360
+            move_heading = Heading.opposite(move_heading)
 
         # Get distance to the wall.
         dist = self.dist_to_wall(pos, move_heading)

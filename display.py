@@ -1,6 +1,7 @@
 import turtle
 import numpy as np
 import pdb
+from heading import Heading
 
 class Display:
     def __init__(self, maze, square_size=30):
@@ -57,20 +58,20 @@ class Display:
         # Draw walls of maze.
         for x in range(self.maze.dim):
             for y in range(self.maze.dim):
-                if not self.maze.is_permissible([x, y], self.maze.NORTH):
-                    self.draw_wall((x, y), self.maze.NORTH)
+                if not self.maze.is_permissible([x, y], Heading.NORTH):
+                    self.draw_wall((x, y), Heading.NORTH)
 
-                if not self.maze.is_permissible([x, y], self.maze.EAST):
-                    self.draw_wall((x, y), self.maze.EAST)
+                if not self.maze.is_permissible([x, y], Heading.EAST):
+                    self.draw_wall((x, y), Heading.EAST)
 
                 # We don't need to draw walls twice, so only check 'down' and
                 # 'left' if we're at the bottom or on the far left.
-                if y == 0 and not self.maze.is_permissible([x, y], self.maze.SOUTH):
-                    self.draw_wall((x, y), self.maze.SOUTH)
+                if y == 0 and not self.maze.is_permissible([x, y], Heading.SOUTH):
+                    self.draw_wall((x, y), Heading.SOUTH)
 
                 # Same as above, don't check 'left' unless at far left.
-                if x == 0 and not self.maze.is_permissible([x, y], self.maze.WEST):
-                    self.draw_wall((x, y), self.maze.WEST)
+                if x == 0 and not self.maze.is_permissible([x, y], Heading.WEST):
+                    self.draw_wall((x, y), Heading.WEST)
 
         # Turn animation back on.
         self.screen.tracer(1)
@@ -105,26 +106,26 @@ class Display:
         # Get the starting point and direction for the line.
         start = None
         heading = None
-        if side == self.maze.NORTH:
+        if side == Heading.NORTH:
             start = (self.origin + self.square_size * cell[0], self.origin +
                 self.square_size * (cell[1] + 1))
-            heading = self.maze.EAST
-        elif side == self.maze.EAST:
+            heading = Heading.EAST 
+        elif side == Heading.EAST:
             start = (self.origin + self.square_size * (cell[0] + 1), self.origin
                 + self.square_size * cell[1])
-            heading = self.maze.NORTH
-        elif side == self.maze.SOUTH:
+            heading = Heading.NORTH
+        elif side == Heading.SOUTH:
             start = (self.origin + self.square_size * cell[0], self.origin +
                 self.square_size * cell[1])
-            heading = self.maze.EAST
-        elif side == self.maze.WEST:
+            heading = Heading.EAST
+        elif side == Heading.WEST:
             start = (self.origin + self.square_size * cell[0], self.origin + self.square_size * cell[1])
-            heading = self.maze.NORTH
+            heading = Heading.NORTH
 
         # Draw the line.
         self.maze_tool.penup()
         self.maze_tool.goto(*start)
-        self.maze_tool.setheading(heading)
+        self.maze_tool.setheading(heading.value)
         self.maze_tool.pendown()
         self.maze_tool.forward(self.square_size)
         self.maze_tool.penup()
@@ -134,7 +135,7 @@ class Display:
 
         Arguments:
             pos -- the mouse's position. a list containing x, y integer co-ordinates. 
-            heading -- the mouse's heading. an integer in the range (0, 360].
+            heading -- a Heading value, e.g. Heading.NORTH.
         """
         # Keep track of pos for path drawing.
         self.pos = np.array(pos, dtype=np.int8)
@@ -146,7 +147,7 @@ class Display:
         self.mouse_tool.goto(x, y)
 
         # Set the heading.
-        self.mouse_tool.setheading(heading)
+        self.mouse_tool.setheading(heading.value)
 
         # Put the pen down ready for drawing.
         self.mouse_tool.pendown()
@@ -155,10 +156,10 @@ class Display:
         """Draws a new heading for the mouse.
 
         Arguments:
-            heading -- the mouse's heading. an integer in the range (0, 360].
+            heading -- a Heading value, e.g. Heading.NORTH.
         """
         # Set the mouse's heading.
-        self.mouse_tool.setheading(heading)
+        self.mouse_tool.setheading(heading.value)
 
     def increment_path(self, from_pos, to_pos):
         # Convert the positions to indexes.
