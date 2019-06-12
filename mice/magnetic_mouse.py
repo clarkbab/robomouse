@@ -1,26 +1,31 @@
 import random
 import pdb
 import numpy as np
-from mice.mixins import StateMixin
 from heading import Heading
 from rotation import Rotation
 from sensor import Sensor
+from state import State
 
-class MagneticMouse(StateMixin):
+class MagneticMouse():
     MAX_MOVE = 3
+    PLAN_RUN = 0
+    EXEC_RUN = 1
 
     def __init__(self, maze_dim, init_state, verbose):
         """Sets up the mouse's initial state.
         """
-        super().init(maze_dim, init_state, verbose)
+        self.state = State(init_state['pos'], init_state['heading'])
         self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
         self.dead_ends = np.zeros((maze_dim, maze_dim))
         self.verbose = verbose
+        self.reached_goal = False
+        self.maze_dim = maze_dim
+        self.run = self.PLAN_RUN
 
     def unit_centre(self):
         """Finds the unit vector from the mouse to the centre.
         """
-        vec = self.maze_centre - self.pos
+        vec = self.maze_centre - self.state.pos
         unit_vec = vec / np.linalg.norm(vec)
         return unit_vec
         
@@ -36,13 +41,13 @@ class MagneticMouse(StateMixin):
         """
         max_move = min([reading, self.MAX_MOVE])
         rot = Sensor.rotation(sensor)
-        move_heading = Heading.rotate(self.heading, rot)
+        move_heading = Heading.rotate(self.state.heading, rot)
 
         # Some moves may lead to dead-ends.
         poss_move_vecs = np.ndarray((0, 2), dtype=np.int8)
         for move in range(1, max_move + 1):
             move_vec = move * Heading.components(move_heading)
-            new_pos = self.pos + move_vec 
+            new_pos = self.state.pos + move_vec 
 
             # Only consider the move if it doesn't lead to a dead end.
             if self.dead_ends[tuple(new_pos)] == 0:
@@ -58,15 +63,15 @@ class MagneticMouse(StateMixin):
         # Print mouse's assumed location.
         if self.verbose:
             print(f"[MOUSE] Run: {self.run}")
-            print(f"[MOUSE] Pos: {self.pos}")
-            print(f"[MOUSE] Heading: {self.heading.value}")
+            print(f"[MOUSE] Pos: {self.state.pos}")
+            print(f"[MOUSE] Heading: {self.state.heading.value}")
 
         # Update mouse's state.
         rot, move = self.make_move(readings)
 
         # Update the mouse's internal state.
         if not (rot, move) == ('RESET', 'RESET'):
-            self.update_state(rot, move)
+            self.state.update(rot, move)
 
         # Check if we're in the goal.
         if self.in_goal():
@@ -79,11 +84,24 @@ class MagneticMouse(StateMixin):
 
         return rot, move
 
+    def in_goal(self):
+        """Checks if we're in the centre of the maze.
+        """
+        # Both axes will have the same goal co-ordinates.
+        goal_coords = [self.maze_dim / 2 - 1, self.maze_dim / 2]
+
+        # Check if position in goal.
+        if not (self.state.pos[0] in goal_coords and self.state.pos[1] in goal_coords):
+            return False
+
+        return True
+
     def make_move(self, readings):
         # Check if we should reset.
-        if self.reached_goal:
+        if self.run == self.PLAN_RUN and self.reached_goal:
             if self.verbose: print(f"[MOUSE] Finished planning.")
-            self.start_execution()
+            self.run = self.EXEC_RUN
+            self.state.reset()
             return 'RESET', 'RESET'
 
         # Get a prob for each direction.
@@ -113,7 +131,7 @@ class MagneticMouse(StateMixin):
         # If no possible moves, mark dead end and turn around. 
         if len(move_vecs) == 0:
             # Mark dead end on map.
-            self.dead_ends[tuple(self.pos)] = 1
+            self.dead_ends[tuple(self.state.pos)] = 1
 
             # Turn around.
             return Rotation.LEFT, 0

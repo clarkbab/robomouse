@@ -1,15 +1,16 @@
 import pdb
 import numpy as np
-from mice.mixins import StateMixin
 from heading import Heading
 from rotation import Rotation
 from sensor import Sensor
+from state import State
 
-class TremauxMouse(StateMixin):
+class TremauxMouse():
     MAX_MOVE = 3
 
     def __init__(self, maze_dim, init_state, verbose):
-        super().init(maze_dim, init_state, verbose)
+        # Initialise the state.
+        self.state = State(init_state['pos'], init_state['heading'])
         self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
         self.backtrack = False
 
@@ -63,6 +64,18 @@ class TremauxMouse(StateMixin):
                 if self.verbose: print(f"[MOUSE] finished.")
 
         return rot, move
+
+    def in_goal(self):
+        """Checks if we're in the centre of the maze.
+        """
+        # Both axes will have the same goal co-ordinates.
+        goal_coords = [self.maze_dim / 2 - 1, self.maze_dim / 2]
+
+        # Check if position in goal.
+        if not (self.state.pos[0] in goal_coords and self.state.pos[1] in goal_coords):
+            return False
+
+        return True
 
     def square_position(self, square_id):
         """Gets the position of a square.

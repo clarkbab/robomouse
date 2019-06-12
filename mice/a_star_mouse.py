@@ -1,22 +1,35 @@
 import pdb
 import math
 import numpy as np
-from mice.mixins import StateMixin
 from heading import Heading
 from rotation import Rotation
 from sensor import Sensor
+from state import State
 
-class AStarMouse(StateMixin):
+class AStarMouse():
     MAX_MOVE = 3
+    PLAN_RUN = 0
+    EXEC_RUN = 1
 
     def __init__(self, maze_dim, init_state, verbose):
-        super().init(maze_dim, init_state, verbose)
-        self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
-        self.backtrack = False
+        # Initialise the state.
+        self.state = State(init_state['pos'], init_state['heading'])
 
-        # Need this for initial steps.
+        # Store maze dimensions to calculate unique square IDs.
+        self.maze_dim = maze_dim
+
+        # Calculate maze centre for magnetism.
+        self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
+
+        # Start in planning mode.
+        self.run = self.PLAN_RUN
+
+        # Initialise flags.
         self.initialising = True
+        self.backtrack = False
         self.reading = None
+        self.reached_goal = False
+        self.verbose = verbose
 
         # Create dict of nodes and edges.
         self.nodes = dict()
@@ -144,7 +157,7 @@ class AStarMouse(StateMixin):
     def unit_centre(self):
         """Finds the unit vector from the mouse to the centre.
         """
-        vec = self.maze_centre - self.pos
+        vec = self.maze_centre - self.state.pos
         unit_vec = vec / np.linalg.norm(vec)
         return unit_vec
 
@@ -164,15 +177,15 @@ class AStarMouse(StateMixin):
         # Print mouse's assumed location.
         if self.verbose:
             print(f"[MOUSE] run: {self.run}")
-            print(f"[MOUSE] pos: {self.pos}")
-            print(f"[MOUSE] heading: {self.heading}")
+            print(f"[MOUSE] pos: {self.state.pos}")
+            print(f"[MOUSE] heading: {self.state.heading}")
 
         # Get the mouse's next move.
         rot, move = self.plan_move(readings)
 
         # Update the mouse's internal state.
         if not (rot, move) == ('RESET', 'RESET'):
-            self.update_state(rot, move)
+            self.state.update(rot, move)
 
         # check if we're in the goal.
         if self.in_goal():
@@ -184,6 +197,18 @@ class AStarMouse(StateMixin):
                 if self.verbose: print(f"[MOUSE] finished.")
 
         return rot, move
+
+    def in_goal(self):
+        """Checks if we're in the centre of the maze.
+        """
+        # Both axes will have the same goal co-ordinates.
+        goal_coords = [self.maze_dim / 2 - 1, self.maze_dim / 2]
+
+        # Check if position in goal.
+        if not (self.state.pos[0] in goal_coords and self.state.pos[1] in goal_coords):
+            return False
+
+        return True
 
     def square_position(self, square_id):
         """Gets the position of a square.
@@ -211,7 +236,7 @@ class AStarMouse(StateMixin):
         node_pos = self.square_position(edge['node'])
 
         # How do we travel to get there?
-        diff = node_pos - self.pos
+        diff = node_pos - self.state.pos
 
         # Get the largest move we can make in that direction.
         return int(min(np.linalg.norm(diff), self.MAX_MOVE))
@@ -279,7 +304,7 @@ class AStarMouse(StateMixin):
 
     def plan_move(self, readings):
         # Get the ID of the current square.
-        square_id = self.square_id(self.pos)
+        square_id = self.square_id(self.state.pos)
 
         # If we're executing, follow the path.
         if self.run == self.EXEC_RUN:
@@ -301,7 +326,7 @@ class AStarMouse(StateMixin):
             # Compare the current heading to desired heading.
             rot = None
             for rotation in Rotation:
-                if Heading.rotate(self.heading, rotation) == edge['heading']:
+                if Heading.rotate(self.state.heading, rotation) == edge['heading']:
                     rot = rotation
 
             # Can't make it there in one rotation.
@@ -337,7 +362,7 @@ class AStarMouse(StateMixin):
             self.backtrack = False
 
             # Get the direction we're moving in.
-            move_heading = Heading.rotate(self.heading, Rotation.LEFT)
+            move_heading = Heading.rotate(self.state.heading, Rotation.LEFT)
 
             # Load up the edge we'll be travelling on.
             edge = self.find_edge_from_node(square_id, move_heading)
@@ -350,7 +375,7 @@ class AStarMouse(StateMixin):
         # If it's not a node, just move forward.
         if not self.node_sensed(readings):
             # Get the edge we're currently on.
-            edge = self.find_edge_from_node(self.last_node, self.heading)
+            edge = self.find_edge_from_node(self.last_node, self.state.heading)
 
             # If we're on an edge, move further if possible.
             move = self.edge_move(edge) if edge else 1
@@ -376,11 +401,11 @@ class AStarMouse(StateMixin):
                 self.increment_traversal(self.last_node, square_id)
 
         # Check if we should reset.
-        if self.reached_goal:
+        if self.run == self.PLAN_RUN and self.reached_goal:
             if self.verbose: print(f"[MOUSE] Finished planning.")
 
             # Get the start and end nodes.
-            start_node = self.square_id(self.init_state['pos'])
+            start_node = self.square_id(self.state.init_pos)
             end_node = square_id
 
             # Find the shortest path from start to finish. Remove first node as
@@ -388,7 +413,8 @@ class AStarMouse(StateMixin):
             self.path = self.shortest_path(start_node, end_node)
 
             # Begin execution phase.
-            self.start_execution()
+            self.run = self.EXEC_RUN
+            self.state.reset()
             return 'RESET', 'RESET'
 
         # Get a prob for each direction.
@@ -404,7 +430,7 @@ class AStarMouse(StateMixin):
             sensor = Sensor(i)
 
             # Get the edge we'll be traversing if we take this move.
-            sensor_heading = Heading.rotate(self.heading, Sensor.rotation(sensor))
+            sensor_heading = Heading.rotate(self.state.heading, Sensor.rotation(sensor))
             edge = self.find_edge_from_node(square_id, sensor_heading)
 
             # Get number of traversals. 0 if edge isn't recorded.
