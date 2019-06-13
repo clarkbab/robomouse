@@ -110,28 +110,6 @@ class AStarMouse():
         # Get the largest move we can make in that direction.
         return int(min(np.linalg.norm(diff), self.MAX_MOVE))
 
-    def node_sensed(self, readings):
-        """
-        Looks like a node if the left or right sensor-readings are non-zero, or
-        we're at a dead-end and all readings are zero.
-
-        Makes assumptions that there is an exit behind us.
-        """
-        # Get sensors leading to exits.
-        exits = np.nonzero(readings)[0]
-
-        # If sensor readings are all blank, we're at a node.
-        if len(exits) == 0:
-            return True
-
-        # If left or right passages are exits, we're at a node. This is because,
-        # assuming there is a passage behind us, there is an l-bend at this
-        # square.
-        if Sensor.LEFT.value in exits or Sensor.RIGHT.value in exits:
-            return True
-
-        return False
-
     def plan_move(self, readings):
         # Get the ID of the current square.
         square_id = self.square_id(self.state.pos)
@@ -203,7 +181,7 @@ class AStarMouse():
             return Rotation.LEFT, move
 
         # If it's not a node, just move forward.
-        if not self.node_sensed(readings):
+        if not Sensor.node_sensed(readings):
             # Get the edge we're currently on.
             edge = self.graph.find_edge_by_heading(self.last_node, self.state.heading)
 
@@ -279,7 +257,7 @@ class AStarMouse():
             traversal = edge['traversals'] if edge else 0
 
             # Don't take the edge if we've been there twice already.
-            if traversal == 2:
+            if traversal > 1:
                 continue
 
             # If we're on an edge, we can possibly move faster.
