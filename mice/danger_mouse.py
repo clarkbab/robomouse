@@ -7,12 +7,6 @@ from sensor import Sensor
 class DangerMouse:
     MAX_MOVE = 3
 
-    # Map from sensor to steering.
-    SENSOR_STEERING_MAP = {
-        0: Rotation.LEFT,
-        1: Rotation.NONE, 2: Rotation.RIGHT 
-    }
-
     def __init__(self, maze_dim, init_state, verbose):
         pass
 

@@ -5,11 +5,10 @@ from heading import Heading
 from rotation import Rotation
 from sensor import Sensor
 from state import State
+from phase import Phase
 
 class MagneticMouse():
     MAX_MOVE = 3
-    PLAN_RUN = 0
-    EXEC_RUN = 1
 
     def __init__(self, maze_dim, init_state, verbose):
         """Sets up the mouse's initial state.
@@ -20,7 +19,7 @@ class MagneticMouse():
         self.verbose = verbose
         self.reached_goal = False
         self.maze_dim = maze_dim
-        self.run = self.PLAN_RUN
+        self.phase = Phase.PLAN
 
     def unit_centre(self):
         """Finds the unit vector from the mouse to the centre.
@@ -62,7 +61,7 @@ class MagneticMouse():
     def next_move(self, readings):
         # Print mouse's assumed location.
         if self.verbose:
-            print(f"[MOUSE] Run: {self.run}")
+            print(f"[MOUSE] Phase: {self.phase.value}")
             print(f"[MOUSE] Pos: {self.state.pos}")
             print(f"[MOUSE] Heading: {self.state.heading.value}")
 
@@ -79,7 +78,7 @@ class MagneticMouse():
             if self.verbose:
                 print(f"[MOUSE] Reached goal.")
 
-            if self.run == self.EXEC_RUN:
+            if self.phase == Phase.EXECUTE:
                 if self.verbose: print(f"[MOUSE] Finished.")
 
         return rot, move
@@ -98,9 +97,9 @@ class MagneticMouse():
 
     def make_move(self, readings):
         # Check if we should reset.
-        if self.run == self.PLAN_RUN and self.reached_goal:
+        if self.phase == Phase.PLAN and self.reached_goal:
             if self.verbose: print(f"[MOUSE] Finished planning.")
-            self.run = self.EXEC_RUN
+            self.phase = Phase.EXECUTE
             self.state.reset()
             return 'RESET', 'RESET'
 

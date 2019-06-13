@@ -4,6 +4,7 @@ from heading import Heading
 from rotation import Rotation
 from sensor import Sensor
 from state import State
+from phase import Phase
 
 class TremauxMouse():
     MAX_MOVE = 3
@@ -43,9 +44,9 @@ class TremauxMouse():
     def next_move(self, readings):
         # Print mouse's assumed location.
         if self.verbose:
-            print(f"[MOUSE] run: {self.run}")
-            print(f"[MOUSE] pos: {self.pos}")
-            print(f"[MOUSE] heading: {self.heading.value}")
+            print(f"[MOUSE] Phase: {self.phase.value}")
+            print(f"[MOUSE] Pos: {self.pos}")
+            print(f"[MOUSE] Heading: {self.heading.value}")
 
         # Get the mouse's next move.
         rot, move = self.plan_move(readings)
@@ -60,7 +61,7 @@ class TremauxMouse():
             if self.verbose:
                 print(f"[MOUSE] reached goal.")
 
-            if self.run == self.EXEC_RUN:
+            if self.phase == Phase.EXECUTE:
                 if self.verbose: print(f"[MOUSE] finished.")
 
         return rot, move

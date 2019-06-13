@@ -5,11 +5,10 @@ from heading import Heading
 from rotation import Rotation
 from sensor import Sensor
 from state import State
+from phase import Phase
 
 class DeadEndMouse():
     MAX_MOVE = 3
-    PLAN_RUN = 0
-    EXEC_RUN = 1
 
     def __init__(self, maze_dim, init_state, verbose):
         self.state = State(init_state['pos'], init_state['heading'])
@@ -64,7 +63,7 @@ class DeadEndMouse():
         """ 
         # Reset if the mouse has reached the goal.
         if self.in_goal():
-            self.run = self.EXEC_RUN
+            self.phase = Phase.EXECUTE 
             self.state.reset()
             return 'RESET', 'RESET'
 

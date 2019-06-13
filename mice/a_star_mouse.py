@@ -5,11 +5,10 @@ from heading import Heading
 from rotation import Rotation
 from sensor import Sensor
 from state import State
+from phase import Phase
 
 class AStarMouse():
     MAX_MOVE = 3
-    PLAN_RUN = 0
-    EXEC_RUN = 1
 
     def __init__(self, maze_dim, init_state, verbose):
         # Initialise the state.
@@ -22,7 +21,7 @@ class AStarMouse():
         self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
 
         # Start in planning mode.
-        self.run = self.PLAN_RUN
+        self.phase = Phase.PLAN
 
         # Initialise flags.
         self.initialising = True
@@ -176,9 +175,9 @@ class AStarMouse():
     def next_move(self, readings):
         # Print mouse's assumed location.
         if self.verbose:
-            print(f"[MOUSE] run: {self.run}")
-            print(f"[MOUSE] pos: {self.state.pos}")
-            print(f"[MOUSE] heading: {self.state.heading}")
+            print(f"[MOUSE] Phase: {self.phase.value}")
+            print(f"[MOUSE] Pos: {self.state.pos}")
+            print(f"[MOUSE] Heading: {self.state.heading}")
 
         # Get the mouse's next move.
         rot, move = self.plan_move(readings)
@@ -193,7 +192,7 @@ class AStarMouse():
             if self.verbose:
                 print(f"[MOUSE] reached goal.")
 
-            if self.run == self.EXEC_RUN:
+            if self.phase == Phase.EXECUTE:
                 if self.verbose: print(f"[MOUSE] finished.")
 
         return rot, move
@@ -307,7 +306,7 @@ class AStarMouse():
         square_id = self.square_id(self.state.pos)
 
         # If we're executing, follow the path.
-        if self.run == self.EXEC_RUN:
+        if self.phase == Phase.EXECUTE:
             # Get the destination node.
             node = self.path[0]
 
@@ -401,7 +400,7 @@ class AStarMouse():
                 self.increment_traversal(self.last_node, square_id)
 
         # Check if we should reset.
-        if self.run == self.PLAN_RUN and self.reached_goal:
+        if self.phase == Phase.PLAN and self.reached_goal:
             if self.verbose: print(f"[MOUSE] Finished planning.")
 
             # Get the start and end nodes.
@@ -413,7 +412,7 @@ class AStarMouse():
             self.path = self.shortest_path(start_node, end_node)
 
             # Begin execution phase.
-            self.run = self.EXEC_RUN
+            self.phase = Phase.EXECUTE
             self.state.reset()
             return 'RESET', 'RESET'
 
