@@ -17,8 +17,8 @@ class Controller:
             mouse -- the Mouse who will navigate the maze.
             maze -- the Maze to navigate.
             init_state -- the mouse's starting state.
-            max_steps -- the number of iterations in the game.
-            delay -- the delay in ms between iterations.
+            max_steps -- the maximum number of steps per phase.
+            delay -- the delay in ms between steps.
             pause -- should we pause before runs.
             verbose -- prints info to the command line.
         """
@@ -170,7 +170,7 @@ class Controller:
         # Set to planning mode.
         self.planning_mode()
 
-        # Run for the max number of iterations.
+        # Run for the max number of steps.
         while self.steps[self.phase.value] < (self.max_steps - 1):
             # Skip step if paused.
             if self.paused:
@@ -196,7 +196,7 @@ class Controller:
         return False
 
     def run_step(self):
-        """Runs one iteration of the maze problem.
+        """Runs one step of the maze problem.
 
         Returns:
             True if mouse finished run, else False.

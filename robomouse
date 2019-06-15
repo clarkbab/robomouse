@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('-d', '--delay', dest='delay', help='delay between steps in ms.', default=0, type='int')
     parser.add_option('-D', '--display', action='store_true', dest='display', help='show display', default=False)
-    parser.add_option('-i', '--iterations', dest='iterations', help='run the game i times and average the score.', default=1, type='int')
+    parser.add_option('-r', '--runs', dest='runs', help='run the game n times and average the score.', default=1, type='int')
     parser.add_option('-M', '--maze', dest='maze', help='path to a maze file.')
     parser.add_option('-m', '--mouse', dest='mouse', help='path to a mouse file.')
     parser.add_option('-p', '--pause', action='store_true', dest='pause', help='pause between runs', default=False)
@@ -45,10 +45,10 @@ if __name__ == '__main__':
         verbose=opts.verbose
     )
 
-    # Run iterations.
+    # Run game r times.
     scores = np.array([])
     finished = 0
-    for i in range(opts.iterations):
+    for i in range(opts.runs):
         if opts.display:
             display = Display(maze)
             controller.run_with_display(display)
@@ -62,8 +62,8 @@ if __name__ == '__main__':
             scores = np.append(scores, score)
             
     # Show results.
-    perc_fin = 100 * finished / opts.iterations
-    print(f"Finished: {perc_fin}% [{finished}/{opts.iterations}]")
+    perc_fin = 100 * finished / opts.runs
+    print(f"Finished: {perc_fin}% [{finished}/{opts.runs}]")
 
     # We may not have finished any runs.
     if len(scores) == 0:
