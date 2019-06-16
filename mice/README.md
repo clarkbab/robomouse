@@ -45,7 +45,7 @@ To favour moves towards the centre, the move vector is projected onto a unit vec
 centre. This produces a scalar in the range from -3 to 3 inclusive for each possible move. We use the [softmax
 function](https://en.wikipedia.org/wiki/Softmax_function) to calculate the probability of performing each possible move.
 
-### `Tremaux Mouse`
+### `Trémaux Mouse`
 
 An early implementation of [depth-first search](https://en.wikipedia.org/wiki/Depth-first_search), this mouse will search
 down a branch until a leaf is reached and then backtrack. For this method to work, the mouse must know how many times it 
@@ -57,7 +57,7 @@ can use this knowledge to move to the next node as quickly as possible.
 
 ### `A* Mouse`
 
-Uses the Tremaux algorithm to explore the maze, noting the nodes passed on the way. Once the planning run is finished,
+Uses the Trémaux algorithm to explore the maze, noting the nodes passed on the way. Once the planning run is finished,
 the mouse finds the shortest path from start to finish using the [`A* search algorithm`](https://en.wikipedia.org/wiki/A*_search_algorithm). It then completes the maze using this path.
 
 ## Results
@@ -81,7 +81,7 @@ The following results are for n=1000 trial runs.
 | Magnetic Mouse          | 1     | 72.4          | 395.80      | 264.84          |
 |                         | 2     | 78.9          | 408.22      | 231.51          |
 |                         | 3     | 85.9          | 177.53      | 111.95          |
-| Tremaux Mouse           | 1     | 100.0         | 141.36      | 63.87           |
+| Trémaux Mouse           | 1     | 100.0         | 141.36      | 63.87           |
 |                         | 2     | 100.0         | 189.83      | 98.24           |
 |                         | 3     | 100.0         | 198.49      | 131.59          | 
 | A-Star Mouse            | 1     | 100.0         | 29.61       | 4.36            |

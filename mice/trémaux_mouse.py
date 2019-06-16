@@ -5,27 +5,38 @@ from rotation import Rotation
 from sensor import Sensor
 from state import State
 from phase import Phase
+from graph import Graph
 
-class TremauxMouse():
+class TrémauxMouse():
     MAX_MOVE = 3
 
     def __init__(self, maze_dim, init_state, verbose):
         # Initialise the state.
         self.state = State(init_state['pos'], init_state['heading'])
+
+        # Store maze dimensions to calculate unique square IDs.
+        self.maze_dim = maze_dim
+
+        # Calculate maze centre for magnetism.
         self.maze_centre = np.array([(maze_dim - 1) / 2, (maze_dim - 1) / 2])
-        self.backtrack = False
 
-        # Need this for initial steps.
+        # Start in planning mode.
+        self.phase = Phase.PLAN
+
+        # Initialise flags.
         self.initialising = True
+        self.backtrack = False
         self.reading = None
+        self.reached_goal = False
+        self.verbose = verbose
 
-        # Create dict of nodes and edges.
-        self.nodes = dict()
+        # Create the graph.
+        self.graph = Graph()
 
     def unit_centre(self):
         """Finds the unit vector from the mouse to the centre.
         """
-        vec = self.maze_centre - self.pos
+        vec = self.maze_centre - self.state.pos
         unit_vec = vec / np.linalg.norm(vec)
         return unit_vec
 
@@ -45,15 +56,15 @@ class TremauxMouse():
         # Print mouse's assumed location.
         if self.verbose:
             print(f"[MOUSE] Phase: {self.phase.value}")
-            print(f"[MOUSE] Pos: {self.pos}")
-            print(f"[MOUSE] Heading: {self.heading.value}")
+            print(f"[MOUSE] Pos: {self.state.pos}")
+            print(f"[MOUSE] Heading: {self.state.heading.value}")
 
         # Get the mouse's next move.
         rot, move = self.plan_move(readings)
 
         # Update the mouse's internal state.
         if not (rot, move) == ('RESET', 'RESET'):
-            self.update_state(rot, move)
+            self.state.update(rot, move)
 
         # check if we're in the goal.
         if self.in_goal():
@@ -87,16 +98,6 @@ class TremauxMouse():
 
         return np.array([x, y])
 
-    def find_edge_by_nodes(self, node1, node2):
-        """Gets the edge between two nodes.
-        """
-        return next((e for e in self.nodes[node1] if e['node'] == node2), None)
-
-    def find_edge_from_node(self, node, heading):
-        """Gets an edge radiating out from a node.
-        """
-        return next((e for e in self.nodes[node] if e['heading'] == heading), None)
-
     def edge_move(self, edge):
         """Gets the largest move we can make down the known edge.
         """
@@ -104,42 +105,10 @@ class TremauxMouse():
         node_pos = self.square_position(edge['node'])
 
         # How do we travel to get there?
-        diff = node_pos - self.pos
+        diff = node_pos - self.state.pos
 
         # Get the largest move we can make in that direction.
         return int(min(np.linalg.norm(diff), self.MAX_MOVE))
-
-    def add_edge(self, node1, node2):
-        # Get positions of nodes.
-        node_pos1 = self.square_position(node1)
-        node_pos2 = self.square_position(node2)
-
-        # Get distance between nodes.
-        vec = node_pos2 - node_pos1
-        dist = int(np.linalg.norm(vec))
-
-        # Get headings traversing from node 1 to 2, and reverse.
-        head_vect = vec / dist 
-        heading1 = Heading.from_components(head_vect)
-        heading2 = Heading.opposite(heading1)
-
-        # Add connections.
-        edge1 = { 'node': node2, 'length': dist, 'heading': heading1, 'traversals': 1 }
-        edge2 = { 'node': node1, 'length': dist, 'heading': heading2, 'traversals': 1 }
-        self.nodes[node1] = np.append(self.nodes[node1], edge1)
-        self.nodes[node2] = np.append(self.nodes[node2], edge2)
-
-    def increment_traversal(self, node1, node2):
-        # Load the edges.
-        edge1 = self.find_edge_by_nodes(node1, node2)
-        edge2 = self.find_edge_by_nodes(node2, node1)
-
-        # Increment the traversals.
-        edge1['traversals'] += 1
-        edge2['traversals'] += 1
-
-    def node_added(self, node):
-        return node in self.nodes
 
     def node_sensed(self, readings):
         """
@@ -163,22 +132,15 @@ class TremauxMouse():
 
         return False
 
-    def add_node(self, node):
-        # Record the node.
-        self.nodes[node] = np.array([])
-
-    def get_edge(self, node, heading):
-        return next((e for e in self.nodes[node] if e['heading'] == heading), None)
-
     def plan_move(self, readings):
         # Get the ID of the current square.
-        square_id = self.square_id(self.pos)
+        square_id = self.square_id(self.state.pos)
 
         # If it's our first move, mark the square as a node and pick an exit or
         # rotate.
         if self.initialising:
             self.initialising = False
-            self.add_node(square_id)
+            self.graph.add_node(square_id)
             self.last_node = square_id
 
             # Get all the exits.
@@ -194,11 +156,14 @@ class TremauxMouse():
             return rot, 1
 
         # Check if we should reset.
-        if self.reached_goal:
+        if self.phase == Phase.PLAN and self.reached_goal:
             if self.verbose: print(f"[MOUSE] Finished planning.")
-            self.start_execution()
+
+            # Begin execution phase.
+            self.phase = Phase.EXECUTE
+            self.state.reset()
             self.initialising = True
-            self.nodes = dict()
+            self.graph = Graph()
             return 'RESET', 'RESET'
 
         # Check if we're backtracking.
@@ -206,10 +171,10 @@ class TremauxMouse():
             self.backtrack = False
 
             # Get the direction we're moving in.
-            move_heading = Heading.rotate(self.heading, Rotation.LEFT)
+            move_heading = Heading.rotate(self.state.heading, Rotation.LEFT)
 
             # Load up the edge we'll be travelling on.
-            edge = self.find_edge_from_node(square_id, move_heading)
+            edge = self.graph.find_edge_by_heading(square_id, move_heading)
 
             # What's the largest move we can make down this edge?
             move = self.edge_move(edge)
@@ -219,7 +184,7 @@ class TremauxMouse():
         # If it's not a node, just move forward.
         if not self.node_sensed(readings):
             # Get the edge we're currently on.
-            edge = self.find_edge_from_node(self.last_node, self.heading)
+            edge = self.graph.find_edge_by_heading(self.last_node, self.state.heading)
 
             # If we're on an edge, move further if possible.
             move = self.edge_move(edge) if edge else 1
@@ -229,20 +194,32 @@ class TremauxMouse():
         # At this point we've decided that the square is a node.
 
         # Add the node if it hasn't been already.
-        node_already_added = self.node_added(square_id)
+        node_already_added = self.graph.node_added(square_id)
         if not node_already_added:
             # Add the node.
-            self.add_node(square_id)
+            self.graph.add_node(square_id)
 
         # We're turning around on the spot, don't need to add an edge.
         if square_id != self.last_node:
             # Check if edge already exists.
-            if not self.find_edge_by_nodes(self.last_node, square_id):
+            if not self.graph.find_edge_by_nodes(self.last_node, square_id):
+                # Get positions of nodes.
+                node_pos1 = self.square_position(self.last_node)
+                node_pos2 = self.square_position(square_id)
+
+                # Get distance between nodes.
+                vec = node_pos2 - node_pos1
+                dist = int(np.linalg.norm(vec))
+
+                # Get headings traversing from node 1 to 2, and reverse.
+                head_vect = vec / dist 
+                heading = Heading.from_components(head_vect)
+
                 # Add the new edge.
-                self.add_edge(self.last_node, square_id)
+                self.graph.add_edge(self.last_node, square_id, dist, heading)
             else:
                 # Increment the number of traversals for this edge.
-                self.increment_traversal(self.last_node, square_id)
+                self.graph.increment_traversal(self.last_node, square_id)
 
         # Get a prob for each direction.
         sensors = np.array([])
@@ -257,8 +234,8 @@ class TremauxMouse():
             sensor = Sensor(i)
 
             # Get the edge we'll be traversing if we take this move.
-            sensor_heading = Heading.rotate(self.heading, Sensor.rotation(sensor))
-            edge = self.find_edge_from_node(square_id, sensor_heading)
+            sensor_heading = Heading.rotate(self.state.heading, Sensor.rotation(sensor))
+            edge = self.graph.find_edge_by_heading(square_id, sensor_heading)
 
             # Get number of traversals. 0 if edge isn't recorded.
             traversal = edge['traversals'] if edge else 0
@@ -293,7 +270,7 @@ class TremauxMouse():
         if self.last_node != square_id and node_already_added:
             # If we only traversed the last edge once, go back that way. We've
             # reached the end of a branch in our depth-first search algorithm.
-            num_traversals = self.find_edge_by_nodes(self.last_node, square_id)['traversals']
+            num_traversals = self.graph.find_edge_by_nodes(self.last_node, square_id)['traversals']
             if num_traversals == 1:
                 self.last_node = square_id
                 self.backtrack = True
