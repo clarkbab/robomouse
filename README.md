@@ -67,3 +67,52 @@ At the end of the runs, the following metrics will be shown:
 
 Follow info [here](mice/README.md#building-a-mouse). 
 
+## Architecture
+
+### Controller
+
+The controller is responsible for tracking mouse state (position and heading) and passing resultant sensor readings to
+the mouse. It then validates the mouse's response and updates the mouse's state accordingly.
+
+The controller has two distinct operating modes: with display and without. The structure of these modes is quite
+different as when using the display, we must use an event-driven model to run the steps. This is because the Turtle
+library expects to be handed control after initialisation, and will respond only to registered listeners. Thus, in
+display mode, we enqueue a callback to run each new step after the previous step has completed.
+
+#### Specifications
+- During each step, it should call `next_move` on the mouse object.
+- It should validate the mouse's move.
+- It should track the state of the mouse.
+- It should enforce the maximum number of steps per move.
+- It should update the display, if necessary.
+- It should be possible to perform many sequential runs and report statistics on all runs.
+
+### Display
+
+The display is a useful tool for debugging mouse logic. 
+
+#### Specifications
+- Pausable with space bar.
+- Coloured path tracking. Each time a path between two squares is traversed, the colour changes. `Red` = 1, `Orange` =
+  2, `Yellow` = 3, `Green` = 4, `Blue` = 5, `Violet` = 6.
+- Maze axes have numbered indexes to check mouse position.
+
+### CLI Interface
+
+There are three modes in which the CLI can run robomouse:
+
+#### Modes
+- Debugging mode. Passing the `--verbose` and `--display` flags, in conjunction with an increased `--delay` is helpful
+  to debug mouse logic. The `--verbose` flag value is also passed as an argument to the mouse's `__init__` method so
+  the developer can conditionally print debugging output from the mouse.
+- Testing maze. Evaluate the performance of a mouse by running it through a maze many times. Do this by passing the
+  `--runs` flag with an appropriate value. This provides you with basic statistics for the mouse's performance.
+- TODO: Training mode! Run a mouse through many mazes, each with a unique topography. This is ideal for mice who can
+  learn their own strategy for solving a maze.
+
+## Acknowledgements
+
+The motivation for this project was the Udacity Data Science Nanodegree. Some starter code was borrowed from this
+project, namely the maze-drawing component based upon the
+[Turtle](https://docs.python.org/3.3/library/turtle.html?highlight=turtle) library.
+

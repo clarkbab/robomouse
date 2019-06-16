@@ -91,4 +91,4 @@ The following results are for n=1000 trial runs.
 |                         | 2     | -             | 24.80       | -               |
 |                         | 3     | -             | 26.87       | -               |
 
-* Perfect mouse is omniscient. This mouse makes the largest possible moves towards the goal with no planning required. No mouse should be able to beat this score.
+* Perfect mouse is omniscient. This mouse makes the largest possible moves towards the goal with no planning required. No mouse can beat this score.
