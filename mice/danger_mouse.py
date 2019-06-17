@@ -35,7 +35,7 @@ class DangerMouse:
         
         # Choose a rotation randomly from those directions. 
         idx = random.choice(non_zero_idx)
-        rot = Sensor.rotation(Sensor(idx))
+        rot = Sensor(idx).rotation()
         
         # Choose a random move in the forward direction.
         max_move = min([sensors[idx], self.MAX_MOVE])

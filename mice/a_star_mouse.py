@@ -134,7 +134,7 @@ class AStarMouse():
             # Compare the current heading to desired heading.
             rot = None
             for rotation in Rotation:
-                if Heading.rotate(self.state.heading, rotation) == edge['heading']:
+                if self.state.heading.rotate(rotation) == edge['heading']:
                     rot = rotation
 
             # Can't make it there in one rotation.
@@ -162,7 +162,7 @@ class AStarMouse():
 
             # Pick the first exit.
             sensor = Sensor(exits[0])
-            rot = Sensor.rotation(sensor)
+            rot = sensor.rotation()
             return rot, 1
 
         # Check if we're backtracking.
@@ -170,7 +170,7 @@ class AStarMouse():
             self.backtrack = False
 
             # Get the direction we're moving in.
-            move_heading = Heading.rotate(self.state.heading, Rotation.LEFT)
+            move_heading = self.state.heading.rotate(Rotation.LEFT)
 
             # Load up the edge we'll be travelling on.
             edge = self.graph.find_edge_by_heading(square_id, move_heading)
@@ -250,7 +250,7 @@ class AStarMouse():
             sensor = Sensor(i)
 
             # Get the edge we'll be traversing if we take this move.
-            sensor_heading = Heading.rotate(self.state.heading, Sensor.rotation(sensor))
+            sensor_heading = self.state.heading.rotate(sensor.rotation())
             edge = self.graph.find_edge_by_heading(square_id, sensor_heading)
 
             # Get number of traversals. 0 if edge isn't recorded.
@@ -264,7 +264,7 @@ class AStarMouse():
             move = self.edge_move(edge) if edge else 1
 
             # Get the move vector components.
-            move_vec = move * Heading.components(sensor_heading)
+            move_vec = move * sensor_heading.components()
             
             # Add the number of edge traversals.
             traversals = np.append(traversals, traversal)
@@ -308,7 +308,7 @@ class AStarMouse():
         idx = np.where(sensors == sensor)[0][0]
 
         # Get the rotation and move to perform.
-        rot = Sensor.rotation(sensor)
+        rot = sensor.rotation()
         move_vec = move_vecs[idx]
         move = abs(move_vec).max()
         

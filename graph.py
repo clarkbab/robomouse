@@ -27,7 +27,7 @@ class Graph:
             heading -- the heading from first node to second node.
         """
         # Get opposite heading.
-        opp_heading = Heading.opposite(heading)
+        opp_heading = heading.opposite()
 
         # Add connections.
         edge1 = { 'node': node2, 'length': dist, 'heading': heading, 'traversals': 1 }

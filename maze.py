@@ -140,8 +140,8 @@ class Maze(object):
             A tuple of sensor readings, each giving the distance to the wall in the (left, middle, right) directions.
         """
         # Get left and right headings.
-        l_head = Heading.rotate(heading, Rotation.LEFT)
-        r_head = Heading.rotate(heading, Rotation.RIGHT)
+        l_head = heading.rotate(Rotation.LEFT)
+        r_head = heading.rotate(Rotation.RIGHT)
 
         # Get distances for each heading.
         dist = self.dist_to_wall(pos, heading)
@@ -185,7 +185,7 @@ class Maze(object):
         move_heading = heading
         dir = (-1, 1)[size > 0]
         if dir == -1:
-            move_heading = Heading.opposite(move_heading)
+            move_heading = move_heading.opposite()
 
         # Get distance to the wall.
         dist = self.dist_to_wall(pos, move_heading)

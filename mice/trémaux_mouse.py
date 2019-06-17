@@ -152,6 +152,7 @@ class TrémauxMouse():
 
             # Pick the first exit.
             sensor = Sensor(exits[0])
+            rot = sensor.rotation()
             rot = Sensor.rotation(sensor)
             return rot, 1
 
@@ -171,7 +172,7 @@ class TrémauxMouse():
             self.backtrack = False
 
             # Get the direction we're moving in.
-            move_heading = Heading.rotate(self.state.heading, Rotation.LEFT)
+            move_heading = self.state.heading.rotate(Rotation.LEFT)
 
             # Load up the edge we'll be travelling on.
             edge = self.graph.find_edge_by_heading(square_id, move_heading)
@@ -234,7 +235,7 @@ class TrémauxMouse():
             sensor = Sensor(i)
 
             # Get the edge we'll be traversing if we take this move.
-            sensor_heading = Heading.rotate(self.state.heading, Sensor.rotation(sensor))
+            sensor_heading = self.state.heading.rotate(sensor.rotation())
             edge = self.graph.find_edge_by_heading(square_id, sensor_heading)
 
             # Get number of traversals. 0 if edge isn't recorded.
@@ -248,7 +249,7 @@ class TrémauxMouse():
             move = self.edge_move(edge) if edge else 1
 
             # Get the move vector components.
-            move_vec = move * Heading.components(sensor_heading)
+            move_vec = move * sensor_heading.components()
             
             # Add the number of edge traversals.
             traversals = np.append(traversals, traversal)
@@ -292,7 +293,7 @@ class TrémauxMouse():
         idx = np.where(sensors == sensor)[0][0]
 
         # Get the rotation and move to perform.
-        rot = Sensor.rotation(sensor)
+        rot = sensor.rotation()
         move_vec = move_vecs[idx]
         move = abs(move_vec).max()
         

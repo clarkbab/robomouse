@@ -8,7 +8,7 @@ class Sensor(Enum):
     FORWARD = 1
     RIGHT = 2
 
-    def rotation(sensor):
+    def rotation(self):
         """Returns the rotation of a sensor.
 
         Arguments:
@@ -17,7 +17,7 @@ class Sensor(Enum):
             the Rotation of the sensor.
         """
         # Return the sensor rotation.
-        return Sensor.__sensor_rotation_map()[sensor]
+        return Sensor.__sensor_rotation_map()[self]
 
     def __sensor_rotation_map():
         """Maps from sensor to rotation.

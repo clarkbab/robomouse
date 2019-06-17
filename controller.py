@@ -236,7 +236,7 @@ class Controller:
             return False
 
         # Is the move valid given the structure of the maze?
-        new_heading = Heading.rotate(self.mouse_state.heading, rot)
+        new_heading = self.mouse_state.heading.rotate(rot)
         if not self.maze.valid_move(self.mouse_state.pos, new_heading, move):
             if self.verbose:
                 print(f"Moving {move} squares in heading {new_heading.value} from {self.mouse_state.pos} is invalid.")

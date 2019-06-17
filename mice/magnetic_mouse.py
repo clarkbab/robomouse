@@ -39,13 +39,13 @@ class MagneticMouse():
         """Selects a random move from all moves in a direction.
         """
         max_move = min([reading, self.MAX_MOVE])
-        rot = Sensor.rotation(sensor)
-        move_heading = Heading.rotate(self.state.heading, rot)
+        rot = sensor.rotation()
+        move_heading = self.state.heading.rotate(rot)
 
         # Some moves may lead to dead-ends.
         poss_move_vecs = np.ndarray((0, 2), dtype=np.int8)
         for move in range(1, max_move + 1):
-            move_vec = move * Heading.components(move_heading)
+            move_vec = move * move_heading.components()
             new_pos = self.state.pos + move_vec 
 
             # Only consider the move if it doesn't lead to a dead end.
@@ -142,7 +142,7 @@ class MagneticMouse():
         sensor = np.random.choice(sensors, p=probs)
         
         # Get the rotation and move to perform.
-        rot = Sensor.rotation(sensor)
+        rot = sensor.rotation()
         idx = np.where(sensors == sensor)[0][0]
         move_vec = move_vecs[idx]
         move = abs(move_vec).max()

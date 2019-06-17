@@ -11,8 +11,8 @@ class State:
         self.reset()
 
     def update(self, rot, move):
-        self.heading = Heading.rotate(self.heading, rot)
-        self.pos += move * Heading.components(self.heading)
+        self.heading = self.heading.rotate(rot)
+        self.pos += move * self.heading.components()
 
     def reset(self):
         self.pos = self.init_pos.copy()

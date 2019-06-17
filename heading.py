@@ -7,7 +7,7 @@ class Heading(Enum):
     SOUTH = 180
     WEST = 270
 
-    def rotate(heading, rot):
+    def rotate(self, rot):
         """Returns a new heading, rotated by the specified amount.
 
         Arguments:
@@ -17,7 +17,7 @@ class Heading(Enum):
             the new Heading.
         """
         # Get the new heading.
-        new_value = heading.value + rot.value
+        new_value = self.value + rot.value
 
         # Wrap heading around if necessary.
         if new_value < 0:
@@ -27,7 +27,7 @@ class Heading(Enum):
 
         return Heading(new_value)
 
-    def opposite(heading):
+    def opposite(self):
         """Returns the opposite heading.
 
         Arguments:
@@ -36,7 +36,7 @@ class Heading(Enum):
             the opposite Heading.
         """
         # Get the heading value.
-        new_value = heading.value
+        new_value = self.value
 
         # Rotate by half a circle.
         new_value += 180
@@ -47,10 +47,10 @@ class Heading(Enum):
 
         return Heading(new_value)
 
-    def components(heading):
+    def components(self):
         """Returns the vector components of the heading.
         """
-        return Heading.__heading_components_map()[heading]
+        return Heading.__heading_components_map()[self]
 
     def from_components(components):
         """Returns the heading from the components.
