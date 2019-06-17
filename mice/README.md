@@ -87,7 +87,7 @@ The following results are for n=1000 trial runs.
 | A-Star Mouse            | 1     | 100.0         | 29.61       | 4.36            |
 |                         | 2     | 100.0         | 41.10       | 4.18            | 
 |                         | 3     | 100.0         | 43.91       | 5.01            | 
-| `Perfect Mouse*`        | 1     | -             | 18.60       | -               |
+| `Perfect Mouse*`        | 1     | -             | 17.60       | -               |
 |                         | 2     | -             | 24.80       | -               |
 |                         | 3     | -             | 26.87       | -               |
 
